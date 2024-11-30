@@ -9,6 +9,7 @@
     pkgs = nixpkgs.legacyPackages.x86_64-linux;
     libs = with pkgs; [
         pkg-config
+        nlohmann_json
         gcc
         adwaita-qt6
         libGL

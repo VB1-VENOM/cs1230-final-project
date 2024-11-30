@@ -32,6 +32,10 @@ add_subdirectory(glm)
 add_library(StaticGLEW STATIC glew/src/glew.c)
 include_directories(${PROJECT_NAME} PRIVATE glew/include)
 
+# nlohmann_json
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(nlohmann_json)
+
 # find OpenGL
 find_package(OpenGL REQUIRED)
 
@@ -51,6 +55,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     glfw
     StaticGLEW
+    nlohmann_json::nlohmann_json
 )
 
 # GLEW: this provides support for Windows (including 64-bit)
