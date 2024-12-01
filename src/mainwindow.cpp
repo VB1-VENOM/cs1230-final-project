@@ -75,6 +75,10 @@ void MainWindow::runMainLoop() {
     }
 }
 
+void MainWindow::close() {
+    glfwSetWindowShouldClose(m_window, GLFW_TRUE);
+}
+
 void MainWindow::finish() {
     m_realtime->finish();
     m_realtime.reset();

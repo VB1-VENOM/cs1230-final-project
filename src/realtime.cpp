@@ -157,8 +157,8 @@ void Realtime::mouseReleaseEvent(int button) {
 
 void Realtime::mouseMoveEvent(double xpos, double ypos) {
     // if (m_mouseDown) {
-    int deltaX = xpos - m_prev_mouse_pos.x;
-    int deltaY = ypos - m_prev_mouse_pos.y;
+    double deltaX = xpos - m_prev_mouse_pos.x;
+    double deltaY = ypos - m_prev_mouse_pos.y;
 
     // Use deltaX and deltaY here to rotate (negate them because idk)
     m_scene->rotateCamera(glm::vec3(0.f, 1.f, 0.f), (float) -deltaX * ROTATE_SENSITIVITY);
@@ -171,6 +171,11 @@ void Realtime::mouseMoveEvent(double xpos, double ypos) {
 
 void Realtime::timerEvent(double elapsedSeconds) {
     float deltaTime = (float) elapsedSeconds;
+
+    // close window with escape
+    if (m_keyMap[GLFW_KEY_ESCAPE]) {
+        mainWindow.close();
+    }
 
     // Use deltaTime and m_keyMap here to move around
     if (m_keyMap[GLFW_KEY_W]) {

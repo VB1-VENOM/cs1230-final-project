@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-use-nodiscard"
 #pragma once
 
 #include <memory>
@@ -9,8 +11,6 @@
 
 class MainWindow {
 public:
-    // TODO should i go back to initialize/finish design instead of constructor/destructor?
-    /// initializes the main window, raising if failure
     void initialize(int width, int height);
     void finish();
     void resize(int w, int h);
@@ -18,6 +18,7 @@ public:
     void handleMouseButtonEvent(int button, int action);
     void handleMouseMoveEvent(double xpos, double ypos);
     std::pair<int, int> getViewportSize() const;
+    void close();
     void runMainLoop();
     void makeCurrent();
     void doneCurrent();
@@ -35,3 +36,5 @@ private:
 
 // we need this to be global to be able to call its methods in GLFW callbacks
 extern MainWindow mainWindow;
+
+#pragma clang diagnostic pop
