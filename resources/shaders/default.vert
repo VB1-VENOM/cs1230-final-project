@@ -1,10 +1,20 @@
 #version 330 core
-uniform mat4 MVP;
-layout(location = 0) in vec2 vPos;
-layout(location = 1) in vec3 vCol;
-out vec3 color;
-void main()
-{
-    gl_Position = MVP * vec4(vPos, 0.0, 1.0);
-    color = vCol;
+
+layout (location = 0) in vec3 positionOS;
+layout (location = 1) in vec3 normalOS;
+
+// outs are passed to the fragment shader
+out vec3 positionWS;
+out vec3 normalWS;
+
+uniform mat3 inverseTransposeModel;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+
+void main() {
+    positionWS = (model * vec4(positionOS, 1.0)).xyz;
+    normalWS = normalize(inverseTransposeModel * normalOS);
+
+    gl_Position = proj * view * vec4(positionWS, 1.0);
 }

@@ -21,8 +21,35 @@ add_definitions(-DGLM_FORCE_SWIZZLE)
 # Specifies .cpp and .h files to be passed to the compiler
 add_executable(${PROJECT_NAME}
     src/main.cpp
-        src/main.cpp
-        src/shaderloader.h
+    src/main.cpp
+    src/utils/shaderloader.h
+    src/realtime.cpp
+    src/realtime.h
+    src/utils/sceneparser.cpp
+    src/utils/sceneparser.h
+    src/utils/scenedata.h
+    src/utils/scenefilereader.cpp
+    src/utils/scenefilereader.h
+    src/settings.cpp
+    src/settings.h
+    src/mainwindow.cpp
+    src/mainwindow.h
+    src/objects/realtimeobject.cpp
+    src/objects/realtimeobject.h
+    src/objects/primitivemesh.cpp
+    src/objects/primitivemesh.h
+    src/objects/conemesh.cpp
+    src/objects/conemesh.h
+    src/objects/cylindermesh.cpp
+    src/objects/cylindermesh.h
+    src/objects/cubemesh.cpp
+    src/objects/cubemesh.h
+    src/objects/spheremesh.cpp
+    src/objects/spheremesh.h
+    src/realtimescene.cpp
+    src/realtimescene.h
+    src/camera.cpp
+    src/camera.h
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`
