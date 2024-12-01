@@ -156,16 +156,16 @@ void Realtime::mouseReleaseEvent(int button) {
 }
 
 void Realtime::mouseMoveEvent(double xpos, double ypos) {
-    if (m_mouseDown) {
-        int deltaX = xpos - m_prev_mouse_pos.x;
-        int deltaY = ypos - m_prev_mouse_pos.y;
+    // if (m_mouseDown) {
+    int deltaX = xpos - m_prev_mouse_pos.x;
+    int deltaY = ypos - m_prev_mouse_pos.y;
 
-        // Use deltaX and deltaY here to rotate (negate them because idk)
-        m_scene->rotateCamera(glm::vec3(0.f, 1.f, 0.f), (float) -deltaX * ROTATE_SENSITIVITY);
-        m_scene->rotateCamera(glm::normalize(glm::cross(m_scene->cameraLook(), m_scene->cameraUp())), (float) -deltaY * ROTATE_SENSITIVITY);
+    // Use deltaX and deltaY here to rotate (negate them because idk)
+    m_scene->rotateCamera(glm::vec3(0.f, 1.f, 0.f), (float) -deltaX * ROTATE_SENSITIVITY);
+    m_scene->rotateCamera(glm::normalize(glm::cross(m_scene->cameraLook(), m_scene->cameraUp())), (float) -deltaY * ROTATE_SENSITIVITY);
 
-        // update(); // asks for a PaintGL() call to occur
-    }
+    // update(); // asks for a PaintGL() call to occur
+    // }
     m_prev_mouse_pos = glm::dvec2(xpos, ypos);
 }
 

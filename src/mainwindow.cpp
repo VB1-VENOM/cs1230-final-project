@@ -20,6 +20,9 @@ void MainWindow::initialize(int width, int height) {
     // set opengl context to the new window
     glfwMakeContextCurrent(m_window);
 
+    // lock cursor to window
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     // window callbacks
     glfwSetCursorPosCallback(m_window, MainWindow::cursorPositionCallback);
     glfwSetMouseButtonCallback(m_window, MainWindow::mouseButtonCallback);
