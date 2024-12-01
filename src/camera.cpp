@@ -20,7 +20,7 @@ void Camera::translate(const glm::vec3& translation) {
 }
 
 void Camera::rotate(const glm::vec3& axisWS, float angleRad) {
-    glm::mat4 rot = rotateMatrix(axisWS, angleRad);
+    glm::mat4 rot = glm::rotate(glm::mat4(1.f), angleRad, axisWS);
     m_look = glm::normalize(rot * glm::vec4(m_look, 0.f));
     m_up = glm::normalize(rot * glm::vec4(m_up, 0.f));
     m_viewMatrix = computeViewMatrix();
@@ -69,7 +69,7 @@ glm::mat4 Camera::computeViewMatrix() {
                               u.z, v.z, w.z, 0.f,
                               0.f, 0.f, 0.f, 1.f);
     // to send points from world space to camera space, we also need to translate by the negation of the camera position
-    return rot * translateMatrix(-m_pos);
+    return rot * glm::translate(glm::mat4(1.f), -m_pos);
 }
 
 glm::mat4 Camera::computeProjectionMatrix() const {
@@ -135,19 +135,4 @@ const glm::vec3& Camera::look() const {
 
 const glm::vec3& Camera::up() const {
     return m_up;
-}
-
-glm::mat4 Camera::translateMatrix(const glm::vec3& translation) {
-    return {1.f, 0.f, 0.f, 0.f,
-             0.f, 1.f, 0.f, 0.f,
-             0.f, 0.f, 1.f, 0.f,
-             translation.x, translation.y, translation.z, 1.f};
-}
-
-glm::mat4 Camera::rotateMatrix(const glm::vec3& axis, float angleRad) {
-    return glm::mat3(
-        glm::cos(angleRad) + axis.x * axis.x * (1.f - glm::cos(angleRad)), axis.x * axis.y * (1.f - glm::cos(angleRad)) + axis.z * glm::sin(angleRad), axis.x * axis.z * (1.f - glm::cos(angleRad)) - axis.y * glm::sin(angleRad),
-        axis.x * axis.y * (1.f - glm::cos(angleRad)) - axis.z * glm::sin(angleRad), glm::cos(angleRad) + axis.y * axis.y * (1.f - glm::cos(angleRad)), axis.y * axis.z * (1.f - glm::cos(angleRad)) + axis.x * glm::sin(angleRad),
-        axis.x * axis.z * (1.f - glm::cos(angleRad)) + axis.y * glm::sin(angleRad), axis.y * axis.z * (1.f - glm::cos(angleRad)) - axis.x * glm::sin(angleRad), glm::cos(angleRad) + axis.z * axis.z * (1.f - glm::cos(angleRad))
-    );
 }

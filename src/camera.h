@@ -62,9 +62,6 @@ private:
     glm::vec3 m_up;
     float m_near;
     float m_far;
-
-    static glm::mat4 translateMatrix(const glm::vec3& translation);
-    static glm::mat4 rotateMatrix(const glm::vec3& axisWS, float angleRad);
 };
 
 #pragma clang diagnostic pop
