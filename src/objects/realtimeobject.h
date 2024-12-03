@@ -5,7 +5,7 @@
 #include <memory>
 #include <map>
 #include "utils/sceneparser.h"
-#include "primitivemesh.h"
+#include "meshes/primitivemesh.h"
 
 /// Represents a single object in the scene, with a transformation matrix, material, type, and pointer to the mesh for that type
 /// Just used as a container for the data that the renderer needs to draw the object; all methods are just getters

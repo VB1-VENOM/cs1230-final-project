@@ -2,8 +2,8 @@
 #pragma ide diagnostic ignored "modernize-use-nodiscard"
 #pragma once
 
-#include <GL/glew.h>
-#include <glm/glm.hpp>
+#include "glew/include/GL/glew.h"
+#include "glm/glm.hpp"
 #include <memory>
 #include <map>
 #include "utils/sceneparser.h"

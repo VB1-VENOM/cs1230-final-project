@@ -1,5 +1,5 @@
 #include "realtime.h"
-#include "objects/primitivemesh.h"
+#include "meshes/primitivemesh.h"
 #include "mainwindow.h"
 #include "realtimescene.h"
 

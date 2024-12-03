@@ -34,18 +34,18 @@ add_executable(${PROJECT_NAME}
     src/settings.h
     src/mainwindow.cpp
     src/mainwindow.h
-    src/objects/realtimeobject.cpp
-    src/objects/realtimeobject.h
-    src/objects/primitivemesh.cpp
-    src/objects/primitivemesh.h
-    src/objects/conemesh.cpp
-    src/objects/conemesh.h
-    src/objects/cylindermesh.cpp
-    src/objects/cylindermesh.h
-    src/objects/cubemesh.cpp
-    src/objects/cubemesh.h
-    src/objects/spheremesh.cpp
-    src/objects/spheremesh.h
+        src/objects/realtimeobject.cpp
+        src/objects/realtimeobject.h
+        src/meshes/primitivemesh.cpp
+        src/meshes/primitivemesh.h
+        src/meshes/conemesh.cpp
+        src/meshes/conemesh.h
+        src/meshes/cylindermesh.cpp
+        src/meshes/cylindermesh.h
+        src/meshes/cubemesh.cpp
+        src/meshes/cubemesh.h
+        src/meshes/spheremesh.cpp
+        src/meshes/spheremesh.h
     src/realtimescene.cpp
     src/realtimescene.h
     src/camera.cpp
