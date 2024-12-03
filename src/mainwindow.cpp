@@ -31,10 +31,12 @@ void MainWindow::initialize(int width, int height) {
 
     // TODO better settings initialization
     settings.farPlane = 100.f;
-    settings.nearPlane = 0.1f;
+    settings.nearPlane = 0.05f;
     settings.shapeParameter1 = 20;
     settings.shapeParameter2 = 20;
-    settings.sceneFilePath = "scenefiles/action/required/movement/chess.json";
+    // settings.sceneFilePath = "scenefiles/action/required/movement/chess.json";
+    // settings.sceneFilePath = "scenefiles/action/required/spot_light/spot_light_1.json";
+    settings.sceneFilePath = "scenefiles/final/reflections_basic_modified.json";
 
     auto [w, h] = getViewportSize();
     m_realtime = std::make_unique<Realtime>(w, h);
@@ -62,7 +64,11 @@ void MainWindow::runMainLoop() {
         double elapsedTime = currentTime - lastTickTime;
 
         if (elapsedTime >= timerInterval) {
-            m_realtime->timerEvent(elapsedTime);
+            // in theory we would pass in elapsedTime, but if we want consistent physics we can't.
+            // consider debugging (where the game is paused for a long time): if we passed in elapsedTime, then the frame
+            // after resuming would have a physics tick with a huge deltaTime, which causes issues
+            // m_realtime->timerEvent(elapsedTime);
+            m_realtime->timerEvent(timerInterval);
             lastTickTime = currentTime;
         }
 

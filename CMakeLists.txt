@@ -9,6 +9,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# no optimizations for debug build
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+
 # Include the current directory for header files
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -34,22 +37,34 @@ add_executable(${PROJECT_NAME}
     src/settings.h
     src/mainwindow.cpp
     src/mainwindow.h
-        src/objects/realtimeobject.cpp
-        src/objects/realtimeobject.h
-        src/meshes/primitivemesh.cpp
-        src/meshes/primitivemesh.h
-        src/meshes/conemesh.cpp
-        src/meshes/conemesh.h
-        src/meshes/cylindermesh.cpp
-        src/meshes/cylindermesh.h
-        src/meshes/cubemesh.cpp
-        src/meshes/cubemesh.h
-        src/meshes/spheremesh.cpp
-        src/meshes/spheremesh.h
+    src/objects/realtimeobject.cpp
+    src/objects/realtimeobject.h
+    src/meshes/primitivemesh.cpp
+    src/meshes/primitivemesh.h
+    src/meshes/conemesh.cpp
+    src/meshes/conemesh.h
+    src/meshes/cylindermesh.cpp
+    src/meshes/cylindermesh.h
+    src/meshes/cubemesh.cpp
+    src/meshes/cubemesh.h
+    src/meshes/spheremesh.cpp
+    src/meshes/spheremesh.h
     src/realtimescene.cpp
     src/realtimescene.h
     src/camera.cpp
     src/camera.h
+    src/aabb.h
+    src/objects/staticobject.cpp
+    src/objects/staticobject.h
+    src/objects/collisionobject.cpp
+    src/objects/collisionobject.h
+    src/objects/collisionobject.cpp
+    src/objects/collisionobject.h
+    src/objects/staticobject.cpp
+    src/objects/staticobject.h
+    src/aabb.cpp
+    src/objects/playerobject.cpp
+    src/objects/playerobject.h
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`

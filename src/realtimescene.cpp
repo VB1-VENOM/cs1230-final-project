@@ -2,7 +2,11 @@
 #include <iostream>
 #include "realtimescene.h"
 #include "objects/realtimeobject.h"
+#include "objects/staticobject.h"
+#include "glm/ext/matrix_transform.hpp"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "ConstantParameter"
 #define MAX_LIGHTS 8
 
 const unsigned int SHADER_LIGHT_POINT       = 0x1u;
@@ -27,18 +31,43 @@ std::optional<RealtimeScene> RealtimeScene::init(int width, int height, const st
 RealtimeScene::RealtimeScene(int width, int height, float nearPlane, float farPlane, RenderData renderData,
                              std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) :
 m_width(width), m_height(height), m_globalData(renderData.globalData),
-m_camera(Camera(width, height, renderData.cameraData, nearPlane, farPlane)),
+m_camera(std::make_shared<Camera>(width, height, renderData.cameraData, nearPlane, farPlane)),
 m_nearPlane(nearPlane), m_farPlane(farPlane),
-m_meshes(std::move(meshes)) {
-    m_objects.reserve(renderData.shapes.size());
+m_meshes(std::move(meshes)),
+m_collisionObjects(std::make_shared<std::vector<std::weak_ptr<CollisionObject>>>(0)) {
+    // TODO currently all objects imported from the scene file will be static collidable objects.
+    //  ideally we'd extend the scene format to allow it to specify what physics properties an object has
+    m_objects.reserve(renderData.shapes.size() + 1);
+    m_collisionObjects->reserve(renderData.shapes.size() + 1);
     for (const auto& shape : renderData.shapes) {
-        m_objects.emplace_back(shape, m_meshes);
+        auto staticObject = std::make_shared<StaticObject>(shape, m_meshes, m_collisionObjects);
+        auto collisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(staticObject));
+        auto object = std::static_pointer_cast<RealtimeObject>(staticObject);
+        m_objects.push_back(object);
+        m_collisionObjects->push_back(collisionObject);
     }
+    // create player object TODO better way of doing this
+    ScenePrimitive playerPrimitive = {.type = PrimitiveType::PRIMITIVE_CUBE};
+    // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
+    glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), m_camera->pos());
+    RenderShapeData playerShapeData = {.primitive = playerPrimitive, .ctm = playerCTM};
+    m_playerObject = std::make_shared<PlayerObject>(playerShapeData, m_meshes, m_collisionObjects, m_camera);
+    auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(m_playerObject));
+    auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(m_playerObject);
+    m_objects.push_back(playerRealtimeObject);
+    m_collisionObjects->push_back(playerCollisionObject);
+
     m_lights.reserve(MAX_LIGHTS);
     for (const auto& light : renderData.lights) {
         // normalizing is important (and faster to do here than on the gpu for every fragment)
         m_lights.emplace_back(light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
                               light.penumbra, light.angle, light.width, light.height);
+    }
+}
+
+void RealtimeScene::tick(double elapsedSeconds) {
+    for (auto& object : m_objects) {
+        object->tick(elapsedSeconds);
     }
 }
 
@@ -48,24 +77,27 @@ void RealtimeScene::paintObjects() {
         return;
     }
 
-    passUniformMat4("view", m_camera.viewMatrix());
-    passUniformMat4("proj", m_camera.projectionMatrix());
+    passUniformMat4("view", m_camera->viewMatrix());
+    passUniformMat4("proj", m_camera->projectionMatrix());
     passUniformInt("numLights", (int) m_lights.size());
     passUniformLightArray("lights", m_lights);
-    passUniformVec3("cameraPosWS", m_camera.pos().xyz());
+    passUniformVec3("cameraPosWS", m_camera->pos().xyz());
     passUniformFloat("ka", m_globalData.ka);
     passUniformFloat("kd", m_globalData.kd);
     passUniformFloat("ks", m_globalData.ks);
     for (const auto& object : m_objects) {
-        const SceneMaterial& material = object.material();
-        passUniformMat4("model", object.CTM());
-        passUniformMat3("inverseTransposeModel", object.inverseTransposeCTM());
+        if (!object->shouldRender()) {
+            continue;
+        }
+        const SceneMaterial& material = object->material();
+        passUniformMat4("model", object->CTM());
+        passUniformMat3("inverseTransposeModel", object->inverseTransposeCTM());
         passUniformVec3("cAmbient", material.cAmbient.xyz());
         passUniformVec3("cDiffuse", material.cDiffuse.xyz());
         passUniformVec3("cSpecular", material.cSpecular.xyz());
         passUniformFloat("shininess", material.shininess);
-        glBindVertexArray(object.mesh()->vao());
-        glDrawArrays(GL_TRIANGLES, 0, (GLsizei) (object.mesh()->vertexData().size() / 3));
+        glBindVertexArray(object->mesh()->vao());
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei) (object->mesh()->vertexData().size() / 3));
         glBindVertexArray(0);
     }
 }
@@ -115,7 +147,6 @@ void RealtimeScene::passUniformLight(const char* name, SceneLightData type) {
 }
 
 #pragma clang diagnostic push
-#pragma ide diagnostic ignored "ConstantParameter"
 #pragma ide diagnostic ignored "ConstantConditionsOC"
 GLint RealtimeScene::getUniformLocation(const char* name, bool checkValidLoc) const {
     GLint loc = glGetUniformLocation(*m_shader, name);
@@ -129,15 +160,7 @@ GLint RealtimeScene::getUniformLocation(const char* name, bool checkValidLoc) co
 void RealtimeScene::setDimensions(int width, int height) {
     m_width = width;
     m_height = height;
-    m_camera.setSceneDimensions(width, height);
-}
-
-void RealtimeScene::translateCamera(const glm::vec3& translation) {
-    m_camera.translate(translation);
-}
-
-void RealtimeScene::rotateCamera(const glm::vec3& axisWS, float angleRad) {
-    m_camera.rotate(axisWS, angleRad);
+    m_camera->setSceneDimensions(width, height);
 }
 
 
@@ -145,7 +168,7 @@ void RealtimeScene::updateSettings(float nearPlane, float farPlane) {
     if (farPlane != m_farPlane || nearPlane != m_nearPlane) {
         m_nearPlane = nearPlane;
         m_farPlane = farPlane;
-        m_camera.setNearAndFar(nearPlane, farPlane);
+        m_camera->setNearAndFar(nearPlane, farPlane);
     }
 }
 
@@ -179,14 +202,24 @@ GLuint RealtimeScene::lightTypeToUniform(LightType type) {
     }
 }
 
-const glm::vec3& RealtimeScene::cameraPos() const {
-    return m_camera.pos();
+void RealtimeScene::keyPressEvent(int key) {
+    m_playerObject->keyPressEvent(key);
 }
 
-const glm::vec3& RealtimeScene::cameraLook() const {
-    return m_camera.look();
+void RealtimeScene::keyReleaseEvent(int key) {
+    m_playerObject->keyReleaseEvent(key);
 }
 
-const glm::vec3& RealtimeScene::cameraUp() const {
-    return m_camera.up();
+void RealtimeScene::mousePressEvent(int button) {
+    m_playerObject->mousePressEvent(button);
 }
+
+void RealtimeScene::mouseReleaseEvent(int button) {
+    m_playerObject->mouseReleaseEvent(button);
+}
+
+void RealtimeScene::mouseMoveEvent(double xpos, double ypos) {
+    m_playerObject->mouseMoveEvent(xpos, ypos);
+}
+
+#pragma clang diagnostic pop

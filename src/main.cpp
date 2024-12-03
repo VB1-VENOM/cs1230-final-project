@@ -5,8 +5,8 @@
 #include <GLFW/glfw3.h>
 #include "mainwindow.h"
 
-#define START_WINDOW_WIDTH 640
-#define START_WINDOW_HEIGHT 480
+#define START_WINDOW_WIDTH 1280
+#define START_WINDOW_HEIGHT 720
 
 void error_callback(int error, const char* description) {
     std::cerr << "Error: " << description << std::endl;

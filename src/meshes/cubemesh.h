@@ -6,6 +6,7 @@
 class CubeMesh : public PrimitiveMesh {
 public:
     CubeMesh(int param1, int param2);
+    AABB computeAABB(const glm::mat4& ctm) const override;
 protected:
     int getMinParam1() const override;
     int getMinParam2() const override;

@@ -5,9 +5,12 @@
 // A class representing a scene to be rendered in real-time
 
 #include <map>
+#include <ranges>
 #include "utils/scenedata.h"
 #include "camera.h"
 #include "objects/realtimeobject.h"
+#include "objects/collisionobject.h"
+#include "objects/playerobject.h"
 
 
 /// Analogous to RayTraceScene from project 3/4; represents a scene to be rendered in real-time
@@ -24,14 +27,11 @@ public:
     /// Paints every object in the scene; to be called in paintGL
     void paintObjects();
 
+    /// Called every physics tick
+    void tick(double elapsedSeconds);
+
     /// Sets the dimensions of the scene, and updates the camera's info accordingly
     void setDimensions(int width, int height);
-
-    /// Translates the camera by the given amount
-    void translateCamera(const glm::vec3& translation);
-
-    /// Rotates the camera by the given amount around the given axis
-    void rotateCamera(const glm::vec3& axisWS, float angleRad);
 
     /// Updates the near and far planes of the scene, and updates the camera's info accordingly
     void updateSettings(float nearPlane, float farPlane);
@@ -47,9 +47,12 @@ public:
     /// Returns the height of the scene
     int height() const;
 
-    const glm::vec3& cameraPos() const;
-    const glm::vec3& cameraLook() const;
-    const glm::vec3& cameraUp() const;
+    // input events methods; currently called manually by realtime (ideally we'd have some callback system or something for this)
+    void keyPressEvent(int key);
+    void keyReleaseEvent(int key);
+    void mousePressEvent(int button);
+    void mouseReleaseEvent(int button);
+    void mouseMoveEvent(double xpos, double ypos);
 private:
     RealtimeScene(int width, int height, float nearPlane, float farPlane, RenderData renderData,
                   std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
@@ -60,8 +63,14 @@ private:
     int m_width;
     int m_height;
     SceneGlobalData m_globalData;
-    Camera m_camera;
-    std::vector<RealtimeObject> m_objects;
+    std::shared_ptr<Camera> m_camera;
+    // TODO there might be a smarter way to store these... maybe a map from id to object?
+    //      I feel like we also need some sort of callback system to register objects that want to listen for input, etc
+    std::vector<std::shared_ptr<RealtimeObject>> m_objects;
+    // if we want to pass this to the objects themselves, we need weak_ptrs to avoid circular reference issues
+    std::shared_ptr<std::vector<std::weak_ptr<CollisionObject>>> m_collisionObjects;
+    std::shared_ptr<PlayerObject> m_playerObject;
+
     std::vector<SceneLightData> m_lights;
     // need this to not be a reference to avoid C++ issues; so there's just two copies of this map at all times, oh welllll
     // (it's fineeee, the meshes themselves aren't copied)

@@ -7,6 +7,7 @@
 #include <memory>
 #include <map>
 #include "utils/sceneparser.h"
+#include "aabb.h"
 
 /// Base class for all mesh objects; used to tessellate each primitive shape and generate the respective vertex data
 class PrimitiveMesh {
@@ -27,6 +28,9 @@ public:
     GLuint vbo() const;
     /// Returns the vertex data of the mesh
     const std::vector<float>& vertexData() const;
+    /// Computes the AABB of the mesh in world space, given the CTM
+    /// Default implementation uses the mesh bounds; optionally can be overridden in subclasses to use the ideal object bounds
+    virtual AABB computeAABB(const glm::mat4& ctm) const;
 protected:
     /// Generic constructor for a primitive mesh; called by subclasses' constructors
     PrimitiveMesh(int param1, int param2);

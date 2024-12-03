@@ -7,9 +7,6 @@
 #include "settings.h"
 #include "utils/shaderloader.h"
 
-#define MOVE_SPEED 5.f
-#define ROTATE_SENSITIVITY 0.01f
-
 // ================== Project 5: Lights, Camera
 
 Realtime::Realtime(int w, int h)
@@ -137,15 +134,24 @@ void Realtime::resizeGL(int w, int h) {
 
 void Realtime::keyPressEvent(int key) {
     m_keyMap[key] = true;
+    if (isInited()) {
+        m_scene->keyPressEvent(key);
+    }
 }
 
 void Realtime::keyReleaseEvent(int key) {
     m_keyMap[key] = false;
+    if (isInited()) {
+        m_scene->keyReleaseEvent(key);
+    }
 }
 
 void Realtime::mousePressEvent(int button) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         m_mouseDown = true;
+    }
+    if (isInited()) {
+        m_scene->mousePressEvent(button);
     }
 }
 
@@ -153,49 +159,26 @@ void Realtime::mouseReleaseEvent(int button) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         m_mouseDown = false;
     }
+    if (isInited()) {
+        m_scene->mouseReleaseEvent(button);
+    }
 }
 
 void Realtime::mouseMoveEvent(double xpos, double ypos) {
-    // if (m_mouseDown) {
-    double deltaX = xpos - m_prev_mouse_pos.x;
-    double deltaY = ypos - m_prev_mouse_pos.y;
-
-    // Use deltaX and deltaY here to rotate (negate them because idk)
-    m_scene->rotateCamera(glm::vec3(0.f, 1.f, 0.f), (float) -deltaX * ROTATE_SENSITIVITY);
-    m_scene->rotateCamera(glm::normalize(glm::cross(m_scene->cameraLook(), m_scene->cameraUp())), (float) -deltaY * ROTATE_SENSITIVITY);
-
-    // update(); // asks for a PaintGL() call to occur
-    // }
-    m_prev_mouse_pos = glm::dvec2(xpos, ypos);
+    // currently doing nothing extra program-wide with mouse movement
+    if (isInited()) {
+        m_scene->mouseMoveEvent(xpos, ypos);
+    }
 }
 
 void Realtime::timerEvent(double elapsedSeconds) {
-    float deltaTime = (float) elapsedSeconds;
-
     // close window with escape
     if (m_keyMap[GLFW_KEY_ESCAPE]) {
         mainWindow.close();
     }
 
-    // Use deltaTime and m_keyMap here to move around
-    if (m_keyMap[GLFW_KEY_W]) {
-        m_scene->translateCamera(MOVE_SPEED * deltaTime * m_scene->cameraLook());
+    // call scene tick
+    if (isInited()) {
+        m_scene->tick(elapsedSeconds);
     }
-    if (m_keyMap[GLFW_KEY_S]) {
-        m_scene->translateCamera(-MOVE_SPEED * deltaTime * m_scene->cameraLook());
-    }
-    if (m_keyMap[GLFW_KEY_A]) {
-        m_scene->translateCamera(MOVE_SPEED * deltaTime * glm::normalize(glm::cross(m_scene->cameraUp(), m_scene->cameraLook())));
-    }
-    if (m_keyMap[GLFW_KEY_D]) {
-        m_scene->translateCamera(MOVE_SPEED * deltaTime * glm::normalize(glm::cross(m_scene->cameraLook(), m_scene->cameraUp())));
-    }
-    if (m_keyMap[GLFW_KEY_SPACE]) {
-        m_scene->translateCamera(MOVE_SPEED * deltaTime * glm::vec3(0.f, 1.f, 0.f));
-    }
-    if (m_keyMap[GLFW_KEY_LEFT_CONTROL] || m_keyMap[GLFW_KEY_RIGHT_CONTROL]) {
-        m_scene->translateCamera(MOVE_SPEED * deltaTime * glm::vec3(0.f, -1.f, 0.f));
-    }
-
-    // update(); // asks for a PaintGL() call to occur
 }

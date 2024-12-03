@@ -2,6 +2,7 @@
 #pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 
 #include <iostream>
+#include <optional>
 #include "primitivemesh.h"
 #include "cubemesh.h"
 #include "spheremesh.h"
@@ -19,6 +20,46 @@ PrimitiveMesh::initMeshes(int param1, int param2) {
 }
 
 PrimitiveMesh::PrimitiveMesh(int param1, int param2): m_param1(param1), m_param2(param2) {}
+
+// default implementation for AABB that just uses the mesh bounds
+// TODO make sure eventually this is overridden in all subclasses so that the AABB is on the ideal object bounds, not the mesh
+AABB PrimitiveMesh::computeAABB(const glm::mat4& ctm) const {
+    // TODO ensure that if we use this default implementation, we update it if param1 or param2 change
+    if (m_vertexData.empty()) {
+        throw std::runtime_error("Trying to compute AABB from mesh when vertex data is empty");
+    }
+
+    std::optional<glm::vec3> min = std::nullopt;
+    std::optional<glm::vec3> max = std::nullopt;
+    for (size_t i = 0; i < m_vertexData.size(); i += 6) {
+        glm::vec3 transformed = glm::vec3(ctm * glm::vec4(m_vertexData[i], m_vertexData[i + 1], m_vertexData[i + 2], 1));
+        if (!min) {
+            min = transformed;
+        }
+        if (!max) {
+            max = transformed;
+        }
+        if (transformed.x < min->x) {
+            min->x = transformed.x;
+        }
+        if (transformed.y < min->y) {
+            min->y = transformed.y;
+        }
+        if (transformed.z < min->z) {
+            min->z = transformed.z;
+        }
+        if (transformed.x > max->x) {
+            max->x = transformed.x;
+        }
+        if (transformed.y > max->y) {
+            max->y = transformed.y;
+        }
+        if (transformed.z > max->z) {
+            max->z = transformed.z;
+        }
+    }
+    return {min.value(), max.value()};
+}
 
 void PrimitiveMesh::setParams(int param1, int param2) {
     // maybe we should just update the buffers here (and call makeCurrent() before)

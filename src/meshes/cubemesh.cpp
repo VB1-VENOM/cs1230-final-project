@@ -1,7 +1,28 @@
 #include "cubemesh.h"
 #include "primitivemesh.h"
+#include <optional>
 
 CubeMesh::CubeMesh(int param1, int param2) : PrimitiveMesh(param1, param2) {}
+
+AABB CubeMesh::computeAABB(const glm::mat4& ctm) const {
+    // the most extreme points are the corners of the cube, so we can transform those and find the min and max
+    std::optional<glm::vec3> min = std::nullopt;
+    std::optional<glm::vec3> max = std::nullopt;
+    for (float x : {-0.5f, 0.5f}) {
+        for (float y : {-0.5f, 0.5f}) {
+            for (float z : {-0.5f, 0.5f}) {
+                glm::vec3 transformed = glm::vec3(ctm * glm::vec4(x, y, z, 1));
+                if (!min || (transformed.x <= min->x && transformed.y <= min->y && transformed.z <= min->z)) {
+                    min = transformed;
+                }
+                if (!max || (transformed.x >= max->x && transformed.y >= max->y && transformed.z >= max->z)) {
+                    max = transformed;
+                }
+            }
+        }
+    }
+    return {min.value(), max.value()};
+}
 
 int CubeMesh::getMinParam1() const {
     return 1;
