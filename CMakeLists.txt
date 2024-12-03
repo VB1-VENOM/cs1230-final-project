@@ -5,6 +5,11 @@ project(cs1230_final_lights_camera_explosion LANGUAGES CXX C)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -74,18 +79,18 @@ add_subdirectory(glm)
 add_library(StaticGLEW STATIC glew/src/glew.c)
 include_directories(${PROJECT_NAME} PRIVATE glew/include)
 
+# for fetching the source of external libraries
+include(FetchContent)
+
 # nlohmann_json
-set(JSON_BuildTests OFF CACHE INTERNAL "")
-add_subdirectory(nlohmann_json)
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
 
 # find OpenGL
 find_package(OpenGL REQUIRED)
 
-# Find pkg-config
-find_package(PkgConfig REQUIRED)
-
-# Use pkg-config to find GLFW
-pkg_check_modules(GLFW REQUIRED glfw3)
+# find GLFW
+find_package(glfw3 3.4 REQUIRED)
 
 # Include GLFW directories
 include_directories(${GLFW_INCLUDE_DIRS})

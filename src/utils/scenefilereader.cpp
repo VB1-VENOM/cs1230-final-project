@@ -3,7 +3,7 @@
 
 #include "glm/gtc/type_ptr.hpp"
 
-#include "nlohmann_json/single_include/nlohmann/json.hpp"
+#include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
 #include <cassert>

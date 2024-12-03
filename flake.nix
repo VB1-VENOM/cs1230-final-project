@@ -29,6 +29,7 @@
       shellHook = ''
         export CC=${pkgs.gcc}/bin/gcc
         export CXX=${pkgs.gcc}/bin/g++
+        export CMAKE_PREFIX_PATH=${pkgs.glfw}:$CMAKE_PREFIX_PATH
         export QT_STYLE_OVERRIDE=adwaita-dark
         export QT_QPA_PLATFORMTHEME=gtk3
       '';
