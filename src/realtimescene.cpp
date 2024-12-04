@@ -50,7 +50,7 @@ m_collisionObjects(std::make_shared<std::vector<std::weak_ptr<CollisionObject>>>
     ScenePrimitive playerPrimitive = {.type = PrimitiveType::PRIMITIVE_CUBE};
     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), m_camera->pos());
-    RenderShapeData playerShapeData = {.primitive = playerPrimitive, .ctm = playerCTM};
+    RenderShapeData playerShapeData = RenderShapeData(playerPrimitive,playerCTM);
     m_playerObject = std::make_shared<PlayerObject>(playerShapeData, m_meshes, m_collisionObjects, m_camera);
     auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(m_playerObject));
     auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(m_playerObject);
