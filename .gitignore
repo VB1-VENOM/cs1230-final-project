@@ -192,3 +192,7 @@ configs/
 
 # Xournal++ drawings
 *.xopp
+
+#Things that Jake's computer added (Mac?)
+.cmake/
+._deps/
