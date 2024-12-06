@@ -19,6 +19,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 # Include the current directory for header files
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_PREFIX_PATH "C:/Users/bcher/Desktop/CS1230/glfw-3.4.bin.WIN64")
 
 # Allows you to include files from within those directories, without prefixing their filepaths
 include_directories(src)
@@ -89,8 +90,13 @@ FetchContent_MakeAvailable(json)
 # find OpenGL
 find_package(OpenGL REQUIRED)
 
-# find GLFW
-find_package(glfw3 3.4 REQUIRED)
+# I LOVE WINDOWS
+if (MINGW)
+  FetchContent_Declare(glfw URL https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip)
+  FetchContent_MakeAvailable(glfw)
+else()
+  find_package(glfw3 3.4 REQUIRED)
+endif()
 
 # Include GLFW directories
 include_directories(${GLFW_INCLUDE_DIRS})
