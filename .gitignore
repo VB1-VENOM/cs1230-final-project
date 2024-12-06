@@ -195,4 +195,12 @@ configs/
 
 #Things that Jake's computer added (Mac?)
 .cmake/
-._deps/
+_deps/
+CMakeFiles/
+cs1230_final_lights_camera_explosion
+Testing/
+build.ninja
+CMakeCache.txt
+cmake_install.cmake
+.ninja_deps
+.ninja_log
