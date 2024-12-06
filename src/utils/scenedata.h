@@ -145,6 +145,17 @@ struct SceneMaterial {
         cEmissive = glm::vec4(0);
         bumpMap.clear();
     }
+
+
+    // Default constructor
+    SceneMaterial()
+        : cAmbient(glm::vec4(0)), cDiffuse(glm::vec4(0)), cSpecular(glm::vec4(0)), shininess(0),
+          cReflective(glm::vec4(0)), cTransparent(glm::vec4(0)), ior(1.0f), blend(0), cEmissive(glm::vec4(0)) {}
+
+    // Parameterized constructor
+    SceneMaterial(const SceneColor& ambient, const SceneColor& diffuse)
+        : cAmbient(ambient), cDiffuse(diffuse), cSpecular(glm::vec4(0)), shininess(0),
+          cReflective(glm::vec4(0)), cTransparent(glm::vec4(0)), ior(1.0f), blend(0), cEmissive(glm::vec4(0)) {}
 };
 
 // Struct which contains data for a single primitive in a scene
@@ -152,6 +163,13 @@ struct ScenePrimitive {
     PrimitiveType type;
     SceneMaterial material;
     std::string meshfile; // Used for triangle meshes
+
+    // Default constructor
+    ScenePrimitive()
+        : type(PrimitiveType::PRIMITIVE_CUBE), material(SceneMaterial()), meshfile("") {}
+
+    ScenePrimitive(PrimitiveType primitiveType, const SceneMaterial& mat)
+        : type(primitiveType), material(mat) {}
 };
 
 // Struct which contains data for a transformation.

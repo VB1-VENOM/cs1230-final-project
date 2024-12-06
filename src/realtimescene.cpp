@@ -43,7 +43,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
         newScene->m_collisionObjects.push_back(collisionObject);
     }
     // create player object TODO better way of doing this
-    ScenePrimitive playerPrimitive = {.type = PrimitiveType::PRIMITIVE_CUBE};
+    ScenePrimitive playerPrimitive(PrimitiveType::PRIMITIVE_CUBE, SceneMaterial());
     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
     RenderShapeData playerShapeData = RenderShapeData(playerPrimitive,playerCTM);
@@ -232,6 +232,7 @@ void RealtimeScene::keyReleaseEvent(int key) {
 
 void RealtimeScene::mousePressEvent(int button) {
     m_playerObject->mousePressEvent(button);
+
 }
 
 void RealtimeScene::mouseReleaseEvent(int button) {

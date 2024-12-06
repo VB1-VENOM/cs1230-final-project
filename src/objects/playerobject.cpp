@@ -7,6 +7,8 @@
 #include <iostream>
 #include "playerobject.h"
 #include "realtimescene.h"
+#include "projectileobject.h"
+
 
 PlayerObject::PlayerObject(const RenderShapeData& data,
                            const std::shared_ptr<RealtimeScene>& scene,
@@ -117,8 +119,25 @@ void PlayerObject::keyReleaseEvent(int key) {
     m_keyMap[key] = false;
 }
 
-void PlayerObject::mousePressEvent(int button) {
-    // currently not doing anything with mouse presses for player
+void PlayerObject::mousePressEvent(int button)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        // Create a projectile and add it to the scene
+        glm::vec3 spawnPosition = m_camera->pos() + m_camera->look() * 2.f; // Spawn slightly in front of the player
+        glm::vec3 direction = m_camera->look();
+
+        // Create the projectile's render shape data
+        ScenePrimitive projectilePrimitive(PrimitiveType::PRIMITIVE_CYLINDER,
+            SceneMaterial(SceneColor(0.1f, 0.1f, 0.1f, 1.f), SceneColor(1.f, 1.f, 1.f, 1.f)));
+        glm::mat4 projectileCTM =  glm::translate(glm::mat4(1.f), spawnPosition);
+        projectileCTM = glm::scale(projectileCTM, glm::vec3(0.2f));  // Scaling factor (make it smaller)
+
+        RenderShapeData projectileData(projectilePrimitive, projectileCTM);
+
+        // Add projectile to the scene
+        scene()->addObject(std::make_unique<ProjectileObject>(
+            projectileData, scene(), direction, 20.f, 50.f)); // Speed: 20, Max Distance: 50
+    }
 }
 
 void PlayerObject::mouseReleaseEvent(int button) {
