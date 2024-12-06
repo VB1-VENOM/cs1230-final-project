@@ -8,15 +8,23 @@
 #include "meshes/primitivemesh.h"
 #include "aabb.h"
 
+/// only used as a convenience for the factory function in RealtimeScene
+enum class RealtimeObjectType {
+    OBJECT,
+    STATIC
+};
+
 // class hierarchy (could be split up more if we want more modularity)
 // RealtimeObject -> CollisionObject
 // CollisionObject -> {StaticObject, PlayerObject, BulletObject}
+
+class RealtimeScene;
 
 /// Represents a single object in the scene, with a transformation matrix, material, type, and pointer to the mesh for that type
 /// Base RealtimeObject does not have collision.
 class RealtimeObject {
 public:
-    RealtimeObject(const RenderShapeData& data, const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& meshes);
+    RealtimeObject(const RenderShapeData& data, const std::shared_ptr<RealtimeScene>& scene);
 
     /// called every physics tick
     virtual void tick(double elapsedSeconds);
@@ -31,8 +39,18 @@ public:
     const glm::mat3& inverseTransposeCTM() const;
     const SceneMaterial& material() const;
     PrimitiveType type() const;
-    virtual bool shouldRender() const;
+
+    void setShouldRender(bool shouldRender);
+    bool shouldRender() const;
+
+    void queueFree();
+    bool isQueuedFree() const;
+
+    std::shared_ptr<RealtimeScene> scene() const;
 private:
+    std::weak_ptr<RealtimeScene> m_scene;
+    bool m_shouldRender;
+    bool m_queuedFree;
     std::shared_ptr<PrimitiveMesh> m_mesh;
     glm::mat4 m_ctm;
     glm::mat3 m_inverseOfTranspose3x3CTM;

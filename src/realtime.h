@@ -40,7 +40,7 @@ private:
 
     bool isInited() const;
     void tryInitScene();
-    std::optional<RealtimeScene> m_scene; // optional, for when the scene has not been chosen yet
+    std::shared_ptr<RealtimeScene> m_scene; // empty shared_ptr, for when the scene has not been chosen yet
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
     std::optional<int> m_width;
     std::optional<int> m_height;

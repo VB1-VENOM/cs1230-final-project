@@ -1,10 +1,9 @@
-
 #include "staticobject.h"
+#include "realtimescene.h"
 
 StaticObject::StaticObject(const RenderShapeData& data,
-                           const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& meshes,
-                           std::shared_ptr<std::vector<std::weak_ptr<CollisionObject>>> collisionObjects) :
-                           super(data, meshes, std::move(collisionObjects)) {}
+                           const std::shared_ptr<RealtimeScene>& scene) :
+                           super(data, scene) {}
 
 void StaticObject::translate(const glm::vec3& translation) {
     throw std::runtime_error("Can't translate static object");

@@ -10,7 +10,7 @@
 // ================== Project 5: Lights, Camera
 
 Realtime::Realtime(int w, int h)
-        : m_scene(std::nullopt), m_width(w), m_height(h),
+        : m_scene(), m_width(w), m_height(h),
           m_param1(settings.shapeParameter1), m_param2(settings.shapeParameter2),
           m_meshes(PrimitiveMesh::initMeshes(settings.shapeParameter1, settings.shapeParameter2))
 {
@@ -37,7 +37,7 @@ void Realtime::tryInitScene() {
 }
 
 bool Realtime::isInited() const {
-    return m_scene.has_value();
+    return m_scene != nullptr;
 }
 
 void Realtime::finish() {

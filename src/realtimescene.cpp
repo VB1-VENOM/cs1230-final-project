@@ -1,5 +1,6 @@
 #include <optional>
 #include <iostream>
+#include <algorithm>
 #include "realtimescene.h"
 #include "objects/realtimeobject.h"
 #include "objects/staticobject.h"
@@ -13,62 +14,80 @@ const unsigned int SHADER_LIGHT_POINT       = 0x1u;
 const unsigned int SHADER_LIGHT_DIRECTIONAL = 0x2u;
 const unsigned int SHADER_LIGHT_SPOT        = 0x4u;
 
-std::optional<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
+std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
                                                  float nearPlane, float farPlane,
                                                  std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
     RenderData renderData;
     if (!SceneParser::parse(sceneFilePath, renderData)) {
         std::cerr << "Failed to initialize scene: failed to parse scene file" << std::endl;
-        return std::nullopt;
+        return {nullptr};
     }
     if (renderData.lights.size() > MAX_LIGHTS) {
         std::cerr << "Failed to initialize scene: too many lights" << std::endl;
-        return std::nullopt;
+        return {nullptr};
     }
-    return RealtimeScene(width, height, nearPlane, farPlane, std::move(renderData), std::move(meshes));
-}
+    auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, renderData.cameraData, std::move(meshes)));
 
-RealtimeScene::RealtimeScene(int width, int height, float nearPlane, float farPlane, RenderData renderData,
-                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) :
-m_width(width), m_height(height), m_globalData(renderData.globalData),
-m_camera(std::make_shared<Camera>(width, height, renderData.cameraData, nearPlane, farPlane)),
-m_nearPlane(nearPlane), m_farPlane(farPlane),
-m_meshes(std::move(meshes)),
-m_collisionObjects(std::make_shared<std::vector<std::weak_ptr<CollisionObject>>>(0)) {
+    // all this below initialization must be done in this factory function, not the constructor, due to needing to pass a shared_ptr
+    // to this scene to the objects
+
     // TODO currently all objects imported from the scene file will be static collidable objects.
     //  ideally we'd extend the scene format to allow it to specify what physics properties an object has
-    m_objects.reserve(renderData.shapes.size() + 1);
-    m_collisionObjects->reserve(renderData.shapes.size() + 1);
+    newScene->m_objects.reserve(renderData.shapes.size() + 1);
+    newScene->m_collisionObjects.reserve(renderData.shapes.size() + 1);
     for (const auto& shape : renderData.shapes) {
-        auto staticObject = std::make_shared<StaticObject>(shape, m_meshes, m_collisionObjects);
+        auto staticObject = std::make_shared<StaticObject>(shape, newScene);
         auto collisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(staticObject));
         auto object = std::static_pointer_cast<RealtimeObject>(staticObject);
-        m_objects.push_back(object);
-        m_collisionObjects->push_back(collisionObject);
+        newScene->m_objects.push_back(object);
+        newScene->m_collisionObjects.push_back(collisionObject);
     }
     // create player object TODO better way of doing this
     ScenePrimitive playerPrimitive = {.type = PrimitiveType::PRIMITIVE_CUBE};
     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
-    glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), m_camera->pos());
+    glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
     RenderShapeData playerShapeData = RenderShapeData(playerPrimitive,playerCTM);
-    m_playerObject = std::make_shared<PlayerObject>(playerShapeData, m_meshes, m_collisionObjects, m_camera);
-    auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(m_playerObject));
-    auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(m_playerObject);
-    m_objects.push_back(playerRealtimeObject);
-    m_collisionObjects->push_back(playerCollisionObject);
+    newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera);
+    auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(newScene->m_playerObject));
+    auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(newScene->m_playerObject);
+    newScene->m_objects.push_back(playerRealtimeObject);
+    newScene->m_collisionObjects.push_back(playerCollisionObject);
 
-    m_lights.reserve(MAX_LIGHTS);
+    newScene->m_lights.reserve(MAX_LIGHTS);
     for (const auto& light : renderData.lights) {
         // normalizing is important (and faster to do here than on the gpu for every fragment)
-        m_lights.emplace_back(light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
+        newScene->m_lights.emplace_back(light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
                               light.penumbra, light.angle, light.width, light.height);
     }
+    return newScene;
 }
 
+RealtimeScene::RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
+                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) :
+m_width(width), m_height(height), m_globalData(globalData),
+m_camera(std::make_shared<Camera>(width, height, cameraData, nearPlane, farPlane)),
+m_nearPlane(nearPlane), m_farPlane(farPlane),
+m_meshes(std::move(meshes)) {}
+
 void RealtimeScene::tick(double elapsedSeconds) {
-    for (auto& object : m_objects) {
-        object->tick(elapsedSeconds);
+    size_t currentSize = m_objects.size();
+    for (int i = 0; i < currentSize; i++) {
+        m_objects[i]->tick(elapsedSeconds);
+        // size of the vector may change during the tick, so we need to check if the object is still valid
+        currentSize = m_objects.size();
     }
+
+    // https://stackoverflow.com/a/7958447
+    m_objects.erase(
+            std::remove_if(m_objects.begin(), m_objects.end(),
+                           [](const std::shared_ptr<RealtimeObject>& o) { return o->isQueuedFree(); }),
+            m_objects.end());
+    // simply remove all empty elements from collisionObjects
+    m_collisionObjects.erase(
+            std::remove_if(m_collisionObjects.begin(), m_collisionObjects.end(),
+                           [](const std::weak_ptr<CollisionObject>& o) { return o.expired(); }),
+            m_collisionObjects.end());
+
 }
 
 void RealtimeScene::paintObjects() {
@@ -221,6 +240,42 @@ void RealtimeScene::mouseReleaseEvent(int button) {
 
 void RealtimeScene::mouseMoveEvent(double xpos, double ypos) {
     m_playerObject->mouseMoveEvent(xpos, ypos);
+}
+
+std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, const glm::mat4& ctm, const SceneMaterial& material,
+                              RealtimeObjectType objType) {
+    switch (objType) {
+        case RealtimeObjectType::OBJECT:
+            return addObject(std::make_unique<RealtimeObject>(RenderShapeData(ScenePrimitive(type, material), ctm), shared_from_this()));
+        case RealtimeObjectType::STATIC:
+            return addObject(std::make_unique<StaticObject>(RenderShapeData(ScenePrimitive(type, material), ctm), shared_from_this()));
+    }
+    throw std::runtime_error("Invalid object type");
+}
+
+std::shared_ptr<RealtimeObject> RealtimeScene::addObject(std::unique_ptr<RealtimeObject> object) {
+    std::shared_ptr<RealtimeObject> objectShared = std::move(object);
+    if (!objectShared) {
+        std::cerr << "Failed to add object to scene: object is null" << std::endl;
+        return {nullptr};
+    }
+    // tests if object is a subclass of CollisionObject
+    // if so, we have to add it to the collision objects list
+    std::shared_ptr<CollisionObject> maybeCollisionObject = std::dynamic_pointer_cast<CollisionObject>(objectShared);
+    if (maybeCollisionObject) {
+        std::weak_ptr<CollisionObject> collisionObject = std::weak_ptr<CollisionObject>(maybeCollisionObject);
+        m_collisionObjects.push_back(collisionObject);
+    }
+    m_objects.push_back(objectShared);
+    return objectShared;
+}
+
+const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& RealtimeScene::meshes() const {
+    return m_meshes;
+}
+
+const std::vector<std::weak_ptr<CollisionObject>>& RealtimeScene::collisionObjects() const {
+    return m_collisionObjects;
 }
 
 #pragma clang diagnostic pop

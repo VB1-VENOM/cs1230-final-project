@@ -1,10 +1,12 @@
-#include "realtimeobject.h"
 #include "glm/ext/matrix_transform.hpp"
+#include "realtimeobject.h"
+#include "realtimescene.h"
 
-RealtimeObject::RealtimeObject(const RenderShapeData& data, const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& meshes) :
-m_mesh(meshes.at(data.primitive.type)), m_ctm(data.ctm),
+RealtimeObject::RealtimeObject(const RenderShapeData& data, const std::shared_ptr<RealtimeScene>& scene) :
+m_mesh(scene->meshes().at(data.primitive.type)), m_ctm(data.ctm),
 m_inverseOfTranspose3x3CTM(glm::inverse(glm::transpose(glm::mat3(data.ctm)))),
-m_material(data.primitive.material), m_type(data.primitive.type) {}
+m_material(data.primitive.material), m_type(data.primitive.type), m_shouldRender(true), m_scene(std::weak_ptr(scene)),
+m_queuedFree(false) {}
 
 void RealtimeObject::translate(const glm::vec3& translation) {
     m_ctm = glm::translate(m_ctm, translation);
@@ -41,5 +43,21 @@ PrimitiveType RealtimeObject::type() const {
 }
 
 bool RealtimeObject::shouldRender() const {
-    return true;
+    return m_shouldRender;
+}
+
+void RealtimeObject::setShouldRender(bool shouldRender) {
+    m_shouldRender = shouldRender;
+}
+
+std::shared_ptr<RealtimeScene> RealtimeObject::scene() const {
+    return m_scene.lock();
+}
+
+void RealtimeObject::queueFree() {
+    m_queuedFree = true;
+}
+
+bool RealtimeObject::isQueuedFree() const {
+    return m_queuedFree;
 }

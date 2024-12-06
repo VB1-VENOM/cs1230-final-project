@@ -1,8 +1,8 @@
 #pragma once
 
+#include <unordered_map>
 #include "collisionobject.h"
 #include "camera.h"
-#include <unordered_map>
 
 // TODO play with defaults
 #define DEFAULT_PLAYER_GRAVITY 10.f
@@ -17,8 +17,7 @@
 
 class PlayerObject : public CollisionObject {
 public:
-    PlayerObject(const RenderShapeData& data, const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& meshes,
-                 std::shared_ptr<std::vector<std::weak_ptr<CollisionObject>>> collisionObjects,
+    PlayerObject(const RenderShapeData& data, const std::shared_ptr<RealtimeScene>& scene,
                  std::shared_ptr<Camera> camera);
     void tick(double elapsedSeconds) override;
     /// Moves the player and camera
@@ -30,8 +29,6 @@ public:
     void mousePressEvent(int button);
     void mouseReleaseEvent(int button);
     void mouseMoveEvent(double xpos, double ypos);
-
-    bool shouldRender() const override;
 private:
     // we could avoid storing a new keymap/etc for each object, but i found this the simplest way of designing things
     std::unordered_map<int, bool> m_keyMap;

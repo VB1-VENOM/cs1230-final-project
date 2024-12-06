@@ -1,17 +1,20 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-use-auto"
-#include "playerobject.h"
-
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
+#include <iostream>
+#include "playerobject.h"
+#include "realtimescene.h"
 
 PlayerObject::PlayerObject(const RenderShapeData& data,
-                           const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& meshes,
-                           std::shared_ptr<std::vector<std::weak_ptr<CollisionObject>>> collisionObjects,
+                           const std::shared_ptr<RealtimeScene>& scene,
                            std::shared_ptr<Camera> camera)
-        : super(data, meshes, std::move(collisionObjects)), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt) {}
+        : super(data, scene), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt) {
+    // player shouldn't render by default
+    setShouldRender(false);
+}
 
 void PlayerObject::translate(const glm::vec3& translation) {
     super::translate(translation);
@@ -66,22 +69,23 @@ void PlayerObject::tick(double elapsedSeconds) {
     }
 
     glm::vec3 translation = m_velocity * deltaTime;
-    auto collisionCorrectionVecOpt = collisionCorrectionVec(translation);
+    auto collisionInfoOpt = getCollisionInfo(translation);
 
     // reset velocity in direction of collision
     // TODO this method of doing this allow the player to cling to walls by moving into them
-    if (collisionCorrectionVecOpt.has_value()) {
-        glm::vec3 collisionMovementDir = glm::normalize(*collisionCorrectionVecOpt);
+    // TODO fix duplicate collisions upon landing on the ground
+    if (collisionInfoOpt.has_value()) {
+        glm::vec3 collisionMovementDir = glm::normalize(collisionInfoOpt->collisionCorrectionVec);
         glm::vec3 projOfVelOnCollisionMovementDir = m_velocity * (glm::dot(glm::normalize(m_velocity), collisionMovementDir));
         m_velocity += projOfVelOnCollisionMovementDir;
         if (collisionMovementDir.y > 0.f) {
             m_onGround = true;
         }
-        translation += *collisionCorrectionVecOpt;
+        translation += collisionInfoOpt->collisionCorrectionVec;
     }
 
     // reset onGround if we are not on the ground (i.e. we can freely move in y dir without collision)
-    if (m_onGround && !collisionCorrectionVec(glm::vec3(0.f, -EPSILON, 0.f)).has_value()) {
+    if (m_onGround && !getCollisionInfo(glm::vec3(0.f, -EPSILON, 0.f)).has_value()) {
         m_onGround = false;
     }
 
@@ -117,10 +121,6 @@ void PlayerObject::mouseMoveEvent(double xpos, double ypos) {
     m_camera->rotate(glm::normalize(glm::cross(m_camera->look(), m_camera->up())), (float) -deltaY * ROTATE_SENSITIVITY);
 
     m_prev_mouse_pos = glm::dvec2(xpos, ypos);
-}
-
-bool PlayerObject::shouldRender() const {
-    return false;
 }
 
 #pragma clang diagnostic pop

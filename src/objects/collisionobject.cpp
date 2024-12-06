@@ -1,18 +1,18 @@
 #include <iostream>
 #include <utility>
 #include "collisionobject.h"
+#include "realtimescene.h"
 
 CollisionObject::CollisionObject(const RenderShapeData& data,
-                                 const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& meshes,
-                                 std::shared_ptr<std::vector<std::weak_ptr<CollisionObject>>> collisionObjects)
-        : super(data, meshes), m_aabb(mesh()->computeAABB(CTM())), m_collisionObjects(std::move(collisionObjects)) {}
+                                 const std::shared_ptr<RealtimeScene>& scene)
+        : super(data, scene), m_aabb(mesh()->computeAABB(CTM())) {}
 
 
 glm::vec3 CollisionObject::translateAndCollide(const glm::vec3& translation) {
     glm::vec3 actualTranslation;
-    auto collisionCorrectionVecOpt = collisionCorrectionVec(translation);
-    if (collisionCorrectionVecOpt.has_value()) {
-        actualTranslation = translation + *collisionCorrectionVecOpt;
+    auto collisionInfoOpt = getCollisionInfo(translation);
+    if (collisionInfoOpt.has_value()) {
+        actualTranslation = translation + collisionInfoOpt->collisionCorrectionVec;
     } else {
         actualTranslation = translation;
     }
@@ -25,10 +25,10 @@ void CollisionObject::translate(const glm::vec3& translation) {
     m_aabb.translate(translation);
 }
 
-std::optional<glm::vec3> CollisionObject::collisionCorrectionVec(const glm::vec3& targetTranslation) const {
+std::optional<CollisionInfo> CollisionObject::getCollisionInfo(const glm::vec3& targetTranslation) const {
     AABB movedAABB = m_aabb;
     movedAABB.translate(targetTranslation);
-    for (const auto& objectWeak : *m_collisionObjects) {
+    for (const auto& objectWeak : scene()->collisionObjects()) {
         auto object = objectWeak.lock();
         if (!object) {
             std::cerr << "Collision object weak pointer expired! This shouldn't happen..." << std::endl;
@@ -39,7 +39,7 @@ std::optional<glm::vec3> CollisionObject::collisionCorrectionVec(const glm::vec3
         }
         const auto& otherAABB = object->aabb();
         if (movedAABB.collides(otherAABB)) {
-            return movedAABB.getCollisionMoveVec(otherAABB);
+            return CollisionInfo(movedAABB.getCollisionMoveVec(otherAABB), object);
         }
     }
     return std::nullopt;
