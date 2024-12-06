@@ -9,8 +9,7 @@
     pkgs = nixpkgs.legacyPackages.x86_64-linux;
     libs = with pkgs; [
         pkg-config
-        nlohmann_json
-        gcc
+        clang_15
         adwaita-qt6
         libGL
         libGLU
@@ -27,8 +26,9 @@
       buildInputs = libs;
       LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath libs;
       shellHook = ''
-        export CC=${pkgs.gcc}/bin/gcc
-        export CXX=${pkgs.gcc}/bin/g++
+        # clang 15 is the default compiler version on QtCreator on MacOS, so using that here to be consistent with their behavior
+        export CC=${pkgs.clang_15}/bin/clang
+        export CXX=${pkgs.clang_15}/bin/clang++
         export CMAKE_PREFIX_PATH=${pkgs.glfw}:$CMAKE_PREFIX_PATH
         export QT_STYLE_OVERRIDE=adwaita-dark
         export QT_QPA_PLATFORMTHEME=gtk3
