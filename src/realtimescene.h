@@ -89,7 +89,7 @@ private:
     // need this to not be a reference to avoid C++ issues; so there's just two copies of this map at all times, oh welllll
     // (it's fineeee, the meshes themselves aren't copied)
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
-    std::optional<GLuint> m_shader;
+    std::optional<GLuint> m_phongShader;
 
     // helper functions for passing uniforms to the shader (and checking for -1 locations)
     void passUniformMat4(const char* name, const glm::mat4& mat);

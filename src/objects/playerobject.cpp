@@ -152,6 +152,7 @@ void PlayerObject::mouseMoveEvent(double xpos, double ypos) {
     double deltaX = xpos - m_prev_mouse_pos->x;
     double deltaY = ypos - m_prev_mouse_pos->y;
 
+    // TODO implement normal FPS up/down camera limits
     // Use deltaX and deltaY here to rotate (negate them because idk)
     m_camera->rotate(glm::vec3(0.f, 1.f, 0.f), (float) -deltaX * ROTATE_SENSITIVITY);
     m_camera->rotate(glm::normalize(glm::cross(m_camera->look(), m_camera->up())), (float) -deltaY * ROTATE_SENSITIVITY);

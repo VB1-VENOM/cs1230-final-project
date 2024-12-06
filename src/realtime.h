@@ -38,14 +38,28 @@ private:
     // TODO device correction stuff
     // double m_devicePixelRatio;
 
+    // FBO stuff
+    void makeFBO();
+    void paintScreenTexture(GLuint texture, bool enableInvert, bool enableBoxBlur) const;
+    void initializeFullscreenQuad();
+    GLuint m_defaultFBO;
+    int m_fbo_width;
+    int m_fbo_height;
+    GLuint m_fullscreen_vao;
+    GLuint m_fullscreen_vbo;
+    GLuint m_fbo;
+    GLuint m_fbo_texture;
+    GLuint m_fbo_renderbuffer;
+
     bool isInited() const;
     void tryInitScene();
     std::shared_ptr<RealtimeScene> m_scene; // empty shared_ptr, for when the scene has not been chosen yet
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
-    std::optional<int> m_width;
-    std::optional<int> m_height;
+    int m_width;
+    int m_height;
     int m_param1;
     int m_param2;
-    GLuint m_shader;
+    GLuint m_phongShader;
+    GLuint m_filterShader;
     bool m_queuedBufferUpdate = false;
 };

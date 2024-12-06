@@ -71,8 +71,10 @@ add_executable(${PROJECT_NAME}
     src/aabb.cpp
     src/objects/playerobject.cpp
     src/objects/playerobject.h
-        src/objects/projectileobject.cpp
-        src/objects/projectileobject.h
+    src/objects/projectileobject.cpp
+    src/objects/projectileobject.h
+    src/utils/helpers.h
+    src/utils/helpers.cpp
 
 )
 

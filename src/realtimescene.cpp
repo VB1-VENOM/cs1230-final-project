@@ -5,6 +5,7 @@
 #include "objects/realtimeobject.h"
 #include "objects/staticobject.h"
 #include "glm/ext/matrix_transform.hpp"
+#include "utils/helpers.h"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "ConstantParameter"
@@ -95,7 +96,7 @@ void RealtimeScene::paintObjects() {
         std::cerr << "Failed to paint objects: shader not initialized" << std::endl;
         return;
     }
-    glUseProgram(*m_shader);
+    glUseProgram(*m_phongShader);
     passUniformMat4("view", m_camera->viewMatrix());
     passUniformMat4("proj", m_camera->projectionMatrix());
     passUniformInt("numLights", (int) m_lights.size());
@@ -123,27 +124,27 @@ void RealtimeScene::paintObjects() {
 }
 
 void RealtimeScene::passUniformMat4(const char* name, const glm::mat4& mat) {
-    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
+    helpers::passUniformMat4(m_phongShader.value(), name, mat);
 }
 
 void RealtimeScene::passUniformMat3(const char* name, const glm::mat3& mat) {
-    glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
+    helpers::passUniformMat3(m_phongShader.value(), name, mat);
 }
 
 void RealtimeScene::passUniformFloat(const char* name, float value) {
-    glUniform1f(getUniformLocation(name), value);
+    helpers::passUniformFloat(m_phongShader.value(), name, value);
 }
 
 void RealtimeScene::passUniformInt(const char* name, int value) {
-    glUniform1i(getUniformLocation(name), value);
+    helpers::passUniformInt(m_phongShader.value(), name, value);
 }
 
 void RealtimeScene::passUniformVec3(const char* name, const glm::vec3& vec) {
-    glUniform3fv(getUniformLocation(name), 1, &vec[0]);
+    helpers::passUniformVec3(m_phongShader.value(), name, vec);
 }
 
 void RealtimeScene::passUniformVec3Array(const char* name, const std::vector<glm::vec3>& vecs) {
-    glUniform3fv(getUniformLocation(name), (GLint) vecs.size(), &vecs[0][0]);
+    helpers::passUniformVec3Array(m_phongShader.value(), name, vecs);
 }
 
 void RealtimeScene::passUniformLightArray(const char* name, const std::vector<SceneLightData>& lights) {
@@ -166,16 +167,9 @@ void RealtimeScene::passUniformLight(const char* name, SceneLightData type) {
     glUniform1f(getUniformLocation((lightName + ".angle").c_str()), type.angle);
 }
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "ConstantConditionsOC"
 GLint RealtimeScene::getUniformLocation(const char* name, bool checkValidLoc) const {
-    GLint loc = glGetUniformLocation(*m_shader, name);
-    if (checkValidLoc && loc == -1) {
-        std::cerr << "Could not find uniform " << name << " in shader program" << std::endl;
-    }
-    return loc;
+    return helpers::getUniformLocation(m_phongShader.value(), name, checkValidLoc);
 }
-#pragma clang diagnostic pop
 
 void RealtimeScene::setDimensions(int width, int height) {
     m_width = width;
@@ -193,11 +187,11 @@ void RealtimeScene::updateSettings(float nearPlane, float farPlane) {
 }
 
 void RealtimeScene::initShader(GLuint shader) {
-    m_shader = shader;
+    m_phongShader = shader;
 }
 
 bool RealtimeScene::shaderInitialized() const {
-    return m_shader.has_value();
+    return m_phongShader.has_value();
 }
 
 
