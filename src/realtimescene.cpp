@@ -76,7 +76,7 @@ void RealtimeScene::paintObjects() {
         std::cerr << "Failed to paint objects: shader not initialized" << std::endl;
         return;
     }
-
+    glUseProgram(*m_shader);
     passUniformMat4("view", m_camera->viewMatrix());
     passUniformMat4("proj", m_camera->projectionMatrix());
     passUniformInt("numLights", (int) m_lights.size());
@@ -100,6 +100,7 @@ void RealtimeScene::paintObjects() {
         glDrawArrays(GL_TRIANGLES, 0, (GLsizei) (object->mesh()->vertexData().size() / 3));
         glBindVertexArray(0);
     }
+    glUseProgram(0);
 }
 
 void RealtimeScene::passUniformMat4(const char* name, const glm::mat4& mat) {

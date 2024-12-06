@@ -49,6 +49,8 @@ void Realtime::finish() {
         mesh->deleteBuffers();
     }
 
+    glDeleteProgram(m_shader);
+
     mainWindow.doneCurrent();
 }
 
@@ -109,11 +111,7 @@ void Realtime::paintGL() {
         m_scene->initShader(m_shader);
     }
 
-    glUseProgram(m_shader);
-
     m_scene->paintObjects();
-
-    glUseProgram(0);
 }
 
 
