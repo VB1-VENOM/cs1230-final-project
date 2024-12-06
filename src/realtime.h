@@ -14,7 +14,6 @@
 #include "utils/sceneparser.h"
 #include "realtimescene.h"
 
-// TODO physics ticks and input stuff
 class Realtime {
 public:
     Realtime(int w, int h);

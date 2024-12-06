@@ -22,7 +22,6 @@ void PlayerObject::tick(double elapsedSeconds) {
     super::tick(elapsedSeconds);
 
     float deltaTime = (float) elapsedSeconds;
-    bool temp = false;
     glm::vec3 accelVec = glm::vec3(0.f);
     // Use deltaTime and m_keyMap here to move around
     glm::vec3 look2D = glm::normalize(glm::vec3(m_camera->look().x, 0.f, m_camera->look().z));
@@ -33,7 +32,6 @@ void PlayerObject::tick(double elapsedSeconds) {
         accelVec -= PLAYER_MOVE_ACCEL_WITH_FRICTION * deltaTime * look2D;
     }
     if (m_keyMap[GLFW_KEY_A]) {
-        temp = true;
         accelVec += PLAYER_MOVE_ACCEL_WITH_FRICTION * deltaTime * glm::normalize(glm::cross(m_camera->up(), look2D));
     }
     if (m_keyMap[GLFW_KEY_D]) {

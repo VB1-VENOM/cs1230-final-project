@@ -33,7 +33,7 @@ public:
 
     bool shouldRender() const override;
 private:
-    // TODO we could avoid storing a new keymap/etc for each object, but i found this the simplest way of designing things
+    // we could avoid storing a new keymap/etc for each object, but i found this the simplest way of designing things
     std::unordered_map<int, bool> m_keyMap;
     std::optional<glm::dvec2> m_prev_mouse_pos;
 

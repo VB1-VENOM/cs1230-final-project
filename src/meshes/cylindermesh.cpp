@@ -75,7 +75,6 @@ void CylinderMesh::makeCapWedge(float currentTheta, float nextTheta, float y) {
 
 void CylinderMesh::makeCaps() {
     float cylinderHeight = 1.0;
-    // TODO reserve
     float thetaStep = glm::radians(360.f / (float) param2());
     float currentTheta = 0 * thetaStep;
     float nextTheta = 1 * thetaStep;
