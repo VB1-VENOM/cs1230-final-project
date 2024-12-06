@@ -83,6 +83,23 @@ void PlayerObject::tick(double elapsedSeconds) {
         }
         translation += collisionInfoOpt->collisionCorrectionVec;
     }
+    // example usage of adding object to the scene
+    // TODO remove this in the future
+    if (m_keyMap[GLFW_KEY_E]) {
+        m_keyMap[GLFW_KEY_E] = false;
+        scene()->addObject(PrimitiveType::PRIMITIVE_CONE, glm::translate(glm::mat4(1.f), m_camera->pos() + 2.f * m_camera->look()),
+                           SceneMaterial(SceneColor(0.1f, 0.1f, 0.1f, 1.f), SceneColor(1.f, 1.f, 1.f, 1.f)),
+                           RealtimeObjectType::STATIC);
+    }
+    // example usage of removing object from scene
+    // TODO remove this in the future
+    if (m_keyMap[GLFW_KEY_R]) {
+        auto collisionInfoLookOpt = getCollisionInfo(m_camera->look());
+        if (collisionInfoLookOpt.has_value()) {
+            m_keyMap[GLFW_KEY_R] = false;
+            collisionInfoLookOpt->object->queueFree();
+        }
+    }
 
     // reset onGround if we are not on the ground (i.e. we can freely move in y dir without collision)
     if (m_onGround && !getCollisionInfo(glm::vec3(0.f, -EPSILON, 0.f)).has_value()) {
