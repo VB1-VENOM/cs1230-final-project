@@ -25,6 +25,7 @@ public:
 
     /// Paints every object in the scene; to be called in paintGL
     void paintObjects();
+    void generateProceduralCity(int rows, int cols, float spacing);
 
     /// Convenience method for constructing and adding a new object to the scene
     /// Returns a shared_ptr to the object.
@@ -62,17 +63,23 @@ public:
     const std::vector<std::weak_ptr<CollisionObject>>& collisionObjects() const;
 
     // input events methods; currently called manually by realtime (ideally we'd have some callback system or something for this)
+    float m_nearPlane;
+    float m_farPlane;
+
+
+    RenderData m_renderData;
     void keyPressEvent(int key);
     void keyReleaseEvent(int key);
     void mousePressEvent(int button);
     void mouseReleaseEvent(int button);
     void mouseMoveEvent(double xpos, double ypos);
+    //std::shared_ptr<RealtimeScene> generateProceduralCity(int cityWidth, int cityDepth, int blockSize);
 private:
     RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
                   std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
 
-    float m_nearPlane;
-    float m_farPlane;
+    //float m_nearPlane;
+    //float m_farPlane;
 
     int m_width;
     int m_height;

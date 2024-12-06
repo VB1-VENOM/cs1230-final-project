@@ -5,6 +5,8 @@
 #include "objects/realtimeobject.h"
 #include "objects/staticobject.h"
 #include "glm/ext/matrix_transform.hpp"
+#include "objects/playerobject.h"
+#include <random>
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "ConstantParameter"
@@ -43,7 +45,9 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
         newScene->m_collisionObjects.push_back(collisionObject);
     }
     // create player object TODO better way of doing this
-    ScenePrimitive playerPrimitive = {.type = PrimitiveType::PRIMITIVE_CUBE};
+    SceneMaterial defaultMaterial; // Ensure SceneMaterial has a default constructor
+    ScenePrimitive playerPrimitive{PrimitiveType::PRIMITIVE_CUBE, defaultMaterial};
+
     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
     RenderShapeData playerShapeData = RenderShapeData(playerPrimitive,playerCTM);
@@ -246,9 +250,9 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, con
                               RealtimeObjectType objType) {
     switch (objType) {
         case RealtimeObjectType::OBJECT:
-            return addObject(std::make_unique<RealtimeObject>(RenderShapeData(ScenePrimitive(type, material), ctm), shared_from_this()));
+            return addObject(std::make_unique<RealtimeObject>(RenderShapeData(ScenePrimitive{type, material}, ctm), shared_from_this()));
         case RealtimeObjectType::STATIC:
-            return addObject(std::make_unique<StaticObject>(RenderShapeData(ScenePrimitive(type, material), ctm), shared_from_this()));
+            return addObject(std::make_unique<StaticObject>(RenderShapeData(ScenePrimitive{type, material}, ctm), shared_from_this()));
     }
     throw std::runtime_error("Invalid object type");
 }
@@ -277,5 +281,41 @@ const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& RealtimeScene::me
 const std::vector<std::weak_ptr<CollisionObject>>& RealtimeScene::collisionObjects() const {
     return m_collisionObjects;
 }
+
+
+
+void RealtimeScene::generateProceduralCity(int rows, int cols, float spacing) {
+    std::default_random_engine generator;
+    std::uniform_real_distribution<float> heightDist(1.0f, 5.0f); // Random heights
+    std::uniform_real_distribution<float> widthDist(1.0f, 3.0f);  // Random widths
+    std::uniform_real_distribution<float> depthDist(1.0f, 3.0f);  // Random depths
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            float height = heightDist(generator);
+            float width = widthDist(generator);
+            float depth = depthDist(generator);
+
+            glm::vec3 position(
+                i * spacing,
+                height / 2.0f, // Place the building at half its height to align it with the ground
+                j * spacing);
+
+            glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) *
+                                  glm::scale(glm::mat4(1.0f), glm::vec3(width, height, depth));
+
+            SceneMaterial material; // Default material for buildings
+            material.cDiffuse = SceneColor(0.3f, 0.3f, 0.3f, 1.0f); // Gray color
+            material.cAmbient = SceneColor(0.1f, 0.1f, 0.1f, 1.0f);
+            material.cSpecular = SceneColor(0.5f, 0.5f, 0.5f, 1.0f);
+            material.shininess = 10.0f;
+
+            addObject(PrimitiveType::PRIMITIVE_CUBE, transform, material, RealtimeObjectType::STATIC);
+        }
+    }
+}
+
+
+
 
 #pragma clang diagnostic pop
