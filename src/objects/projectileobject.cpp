@@ -5,6 +5,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "realtimescene.h"
+#include "ncprojectileobject.h"
 
 ProjectileObject::ProjectileObject(const RenderShapeData& data,
                                    const std::shared_ptr<RealtimeScene>& scene,
@@ -28,7 +29,7 @@ void ProjectileObject::tick(double elapsedSeconds) {
 
     // Check for collisions
     auto collisionInfoOpt = getCollisionInfo(translation);
-    if (collisionInfoOpt.has_value() && m_isBullet) {
+    if (collisionInfoOpt.has_value()) {
         // On collision, destroy the projectile
 
         collisionSphereEffect();
@@ -52,9 +53,9 @@ void ProjectileObject::tick(double elapsedSeconds) {
 
 void ProjectileObject::collisionSphereEffect()
 {
-    int numProjectiles = 100; // Number of projectiles to spawn
-    float speed = 10.0f;     // Speed of the additional projectiles
-    float maxDistance = 10.0f; // Max distance for the spawned projectiles
+    int numProjectiles = 500; // Number of projectiles to spawn
+    float speed = 50.0f;     // Speed of the additional projectiles
+    float maxDistance = 100.0f; // Max distance for the spawned projectiles
     std::cout << "ENtering sphere effect" << std::endl;
     for (int i = 0; i < numProjectiles; ++i) {
         // Generate a random direction for the new projectile
@@ -68,14 +69,14 @@ void ProjectileObject::collisionSphereEffect()
         ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_SPHERE,
             SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
         glm::mat4 projectileCTM = this->CTM();
-        projectileCTM = glm::scale(projectileCTM, glm::vec3(0.1f)); // Smaller spheres
+        projectileCTM = glm::scale(projectileCTM, glm::vec3(0.01f)); // Smaller spheres
         projectileCTM = glm::translate(projectileCTM, randomDirection);
 
         RenderShapeData projectileData{projectilePrimitive, projectileCTM};
 
         // Add the new projectile to the scene
-        scene()->addObject(std::make_unique<ProjectileObject>(
-            projectileData, scene(), randomDirection, speed, maxDistance, false));
+        scene()->addObject(std::make_unique<NCProjectileObject>(
+            projectileData, scene(), randomDirection, speed, maxDistance));
         // scene()->addObject(std::make_unique<CollisionObject>(
         //     projectileData, scene()));
     }
