@@ -16,9 +16,60 @@ const unsigned int SHADER_LIGHT_POINT       = 0x1u;
 const unsigned int SHADER_LIGHT_DIRECTIONAL = 0x2u;
 const unsigned int SHADER_LIGHT_SPOT        = 0x4u;
 
+// std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
+//                                                  float nearPlane, float farPlane,
+//                                                  std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
+//     RenderData renderData;
+//     if (!SceneParser::parse(sceneFilePath, renderData)) {
+//         std::cerr << "Failed to initialize scene: failed to parse scene file" << std::endl;
+//         return {nullptr};
+//     }
+//     if (renderData.lights.size() > MAX_LIGHTS) {
+//         std::cerr << "Failed to initialize scene: too many lights" << std::endl;
+//         return {nullptr};
+//     }
+//     auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, renderData.cameraData, std::move(meshes)));
+
+//     // all this below initialization must be done in this factory function, not the constructor, due to needing to pass a shared_ptr
+//     // to this scene to the objects
+
+//     // TODO currently all objects imported from the scene file will be static collidable objects.
+//     //  ideally we'd extend the scene format to allow it to specify what physics properties an object has
+//     newScene->m_objects.reserve(renderData.shapes.size() + 1);
+//     newScene->m_collisionObjects.reserve(renderData.shapes.size() + 1);
+//     for (const auto& shape : renderData.shapes) {
+//         auto staticObject = std::make_shared<StaticObject>(shape, newScene);
+//         auto collisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(staticObject));
+//         auto object = std::static_pointer_cast<RealtimeObject>(staticObject);
+//         newScene->m_objects.push_back(object);
+//         newScene->m_collisionObjects.push_back(collisionObject);
+//     }
+//     // create player object TODO better way of doing this
+//     SceneMaterial defaultMaterial; // Ensure SceneMaterial has a default constructor
+//     ScenePrimitive playerPrimitive{PrimitiveType::PRIMITIVE_CUBE, defaultMaterial};
+
+//     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
+//     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
+//     RenderShapeData playerShapeData = RenderShapeData(playerPrimitive,playerCTM);
+//     newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera);
+//     auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(newScene->m_playerObject));
+//     auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(newScene->m_playerObject);
+//     newScene->m_objects.push_back(playerRealtimeObject);
+//     newScene->m_collisionObjects.push_back(playerCollisionObject);
+
+//     newScene->m_lights.reserve(MAX_LIGHTS);
+//     for (const auto& light : renderData.lights) {
+//         // normalizing is important (and faster to do here than on the gpu for every fragment)
+//         newScene->m_lights.emplace_back(light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
+//                               light.penumbra, light.angle, light.width, light.height);
+//     }
+//     //newScene=generateProceduralCity();
+//     return newScene;
+// }
+
 std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
-                                                 float nearPlane, float farPlane,
-                                                 std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
+                                                   float nearPlane, float farPlane,
+                                                   std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
     RenderData renderData;
     if (!SceneParser::parse(sceneFilePath, renderData)) {
         std::cerr << "Failed to initialize scene: failed to parse scene file" << std::endl;
@@ -30,11 +81,9 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     }
     auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, renderData.cameraData, std::move(meshes)));
 
-    // all this below initialization must be done in this factory function, not the constructor, due to needing to pass a shared_ptr
-    // to this scene to the objects
+    // All initialization must be done here since a shared_ptr to this scene is required.
 
-    // TODO currently all objects imported from the scene file will be static collidable objects.
-    //  ideally we'd extend the scene format to allow it to specify what physics properties an object has
+    // Add static collidable objects from the parsed scene.
     newScene->m_objects.reserve(renderData.shapes.size() + 1);
     newScene->m_collisionObjects.reserve(renderData.shapes.size() + 1);
     for (const auto& shape : renderData.shapes) {
@@ -44,27 +93,38 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
         newScene->m_objects.push_back(object);
         newScene->m_collisionObjects.push_back(collisionObject);
     }
-    // create player object TODO better way of doing this
+
+    // Create player object
     SceneMaterial defaultMaterial; // Ensure SceneMaterial has a default constructor
     ScenePrimitive playerPrimitive{PrimitiveType::PRIMITIVE_CUBE, defaultMaterial};
 
-    // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
+    // Start player scaled up by 1 unit and centered at the camera position
     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
-    RenderShapeData playerShapeData = RenderShapeData(playerPrimitive,playerCTM);
+    RenderShapeData playerShapeData = RenderShapeData(playerPrimitive, playerCTM);
     newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera);
     auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(newScene->m_playerObject));
     auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(newScene->m_playerObject);
     newScene->m_objects.push_back(playerRealtimeObject);
     newScene->m_collisionObjects.push_back(playerCollisionObject);
 
+    // Add lights to the scene
     newScene->m_lights.reserve(MAX_LIGHTS);
     for (const auto& light : renderData.lights) {
-        // normalizing is important (and faster to do here than on the gpu for every fragment)
+        // Normalize light direction for performance and accuracy
         newScene->m_lights.emplace_back(light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
-                              light.penumbra, light.angle, light.width, light.height);
+                                        light.penumbra, light.angle, light.width, light.height);
     }
+
+    // Generate and add the procedural city to the scene
+    int cityRows = 10;   // Number of rows for the city grid
+    int cityCols = 10;   // Number of columns for the city grid
+    float citySpacing = 5.0f; // Spacing between buildings
+    //newScene->generateProceduralCity(cityRows, cityCols, citySpacing);
+
     return newScene;
 }
+
+
 
 RealtimeScene::RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
                              std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) :
@@ -290,6 +350,31 @@ void RealtimeScene::generateProceduralCity(int rows, int cols, float spacing) {
     std::uniform_real_distribution<float> widthDist(1.0f, 3.0f);  // Random widths
     std::uniform_real_distribution<float> depthDist(1.0f, 3.0f);  // Random depths
 
+    // Create the floor
+    float height = heightDist(generator);
+    float floorWidth = cols * spacing; // Width spans the entire city
+    float floorDepth = rows * spacing; // Depth spans the entire city
+    float floorHeight = 0.1f;          // Thin floor
+
+    glm::vec3 floorPosition(
+        (rows - 1) * spacing / 2.0f,  // Center the floor in the X-axis
+        -floorHeight / 2.0f,          // Position floor at ground level
+        //-height/2.0f,
+        (cols - 1) * spacing / 2.0f); // Center the floor in the Z-axis
+
+    glm::mat4 floorTransform = glm::translate(glm::mat4(1.0f), floorPosition) *
+                               glm::scale(glm::mat4(1.0f), glm::vec3(floorWidth, floorHeight, floorDepth));
+
+    SceneMaterial floorMaterial; // Material for the floor
+    floorMaterial.cDiffuse = SceneColor(0.2f, 0.2f, 0.2f, 1.0f); // Dark gray color
+    floorMaterial.cAmbient = SceneColor(0.1f, 0.1f, 0.1f, 1.0f);
+    floorMaterial.cSpecular = SceneColor(0.2f, 0.2f, 0.2f, 1.0f);
+    floorMaterial.shininess = 5.0f;
+
+    // Add the floor to the scene
+    addObject(PrimitiveType::PRIMITIVE_CUBE, floorTransform, floorMaterial, RealtimeObjectType::STATIC);
+
+
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             float height = heightDist(generator);
@@ -314,6 +399,58 @@ void RealtimeScene::generateProceduralCity(int rows, int cols, float spacing) {
         }
     }
 }
+// void RealtimeScene::generateProceduralCity(int rows, int cols, float spacing) {
+//     std::default_random_engine generator;
+//     std::uniform_real_distribution<float> heightDist(1.0f, 5.0f); // Random heights
+//     std::uniform_real_distribution<float> widthDist(1.0f, 3.0f);  // Random widths
+//     std::uniform_real_distribution<float> depthDist(1.0f, 3.0f);  // Random depths
+
+//     // Create the floor
+//     float floorWidth = cols * spacing; // Width spans the entire city
+//     float floorDepth = rows * spacing; // Depth spans the entire city
+//     float floorHeight = 0.1f;          // Thin floor
+
+//     glm::vec3 floorPosition(
+//         (rows - 1) * spacing / 2.0f,  // Center the floor in the X-axis
+//         -floorHeight / 2.0f,          // Lower the floor to align with the base of buildings
+//         (cols - 1) * spacing / 2.0f); // Center the floor in the Z-axis
+
+//     glm::mat4 floorTransform = glm::translate(glm::mat4(1.0f), floorPosition) *
+//                                glm::scale(glm::mat4(1.0f), glm::vec3(floorWidth, floorHeight, floorDepth));
+
+//     SceneMaterial floorMaterial; // Default material for the floor
+//     floorMaterial.cDiffuse = SceneColor(0.2f, 0.2f, 0.2f, 1.0f); // Dark gray color
+//     floorMaterial.cAmbient = SceneColor(0.1f, 0.1f, 0.1f, 1.0f);
+//     floorMaterial.cSpecular = SceneColor(0.2f, 0.2f, 0.2f, 1.0f);
+//     floorMaterial.shininess = 5.0f;
+
+//     addObject(PrimitiveType::PRIMITIVE_CUBE, floorTransform, floorMaterial, RealtimeObjectType::STATIC);
+
+//     // Generate the buildings
+//     for (int i = 0; i < rows; ++i) {
+//         for (int j = 0; j < cols; ++j) {
+//             float height = heightDist(generator);
+//             float width = widthDist(generator);
+//             float depth = depthDist(generator);
+
+//             glm::vec3 position(
+//                 i * spacing,
+//                 height / 2.0f, // Place the building at half its height to align it with the ground
+//                 j * spacing);
+
+//             glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) *
+//                                   glm::scale(glm::mat4(1.0f), glm::vec3(width, height, depth));
+
+//             SceneMaterial material; // Default material for buildings
+//             material.cDiffuse = SceneColor(0.3f, 0.3f, 0.3f, 1.0f); // Gray color
+//             material.cAmbient = SceneColor(0.1f, 0.1f, 0.1f, 1.0f);
+//             material.cSpecular = SceneColor(0.5f, 0.5f, 0.5f, 1.0f);
+//             material.shininess = 10.0f;
+
+//             addObject(PrimitiveType::PRIMITIVE_CUBE, transform, material, RealtimeObjectType::STATIC);
+//         }
+//     }
+// }
 
 
 
