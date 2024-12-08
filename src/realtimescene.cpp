@@ -6,6 +6,7 @@
 #include "objects/staticobject.h"
 #include "glm/ext/matrix_transform.hpp"
 #include "utils/helpers.h"
+#include "material_constants/enemy_materials.h"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "ConstantParameter"
@@ -54,6 +55,19 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     newScene->m_objects.push_back(playerRealtimeObject);
     newScene->m_collisionObjects.push_back(playerCollisionObject);
 
+
+    //create enemies
+    std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,1.5,1.5)};
+    auto enemyList = createEnemies(enemyPositions,newScene,newScene->m_camera);
+    for (auto enemy : enemyList)
+    {
+        auto enemyCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(enemy));
+        auto enemyRealtimeObject = std::static_pointer_cast<RealtimeObject>(enemy);
+
+        newScene->m_collisionObjects.push_back(enemyCollisionObject);
+        newScene->m_objects.push_back(enemyRealtimeObject);
+    }
+
     newScene->m_lights.reserve(MAX_LIGHTS);
     for (const auto& light : renderData.lights) {
         // normalizing is important (and faster to do here than on the gpu for every fragment)
@@ -62,6 +76,24 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     }
     return newScene;
 }
+
+std::vector<std::shared_ptr<EnemyObject>> RealtimeScene::createEnemies(std::vector<glm::vec3> enemy_positions,
+    std::shared_ptr<RealtimeScene> scene, std::shared_ptr<Camera> camera)
+{
+    std::vector<std::shared_ptr<EnemyObject>> enemies;
+    for(glm::vec3 position : enemy_positions)
+    {
+        ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
+        // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
+        glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
+        RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
+
+        enemies.push_back(std::make_shared<EnemyObject>(enemyShapeData, scene, camera));
+
+    }
+    return enemies;
+}
+
 
 RealtimeScene::RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
                              std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) :
