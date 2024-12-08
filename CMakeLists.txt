@@ -71,11 +71,14 @@ add_executable(${PROJECT_NAME}
     src/aabb.cpp
     src/objects/playerobject.cpp
     src/objects/playerobject.h
+    src/objects/enemyobject.cpp
+    src/objects/enemyobject.h
     src/objects/projectileobject.cpp
     src/objects/projectileobject.h
     src/utils/helpers.h
     src/utils/helpers.cpp
-
+    src/material_constants/enemy_materials.cpp
+    src/material_constants/enemy_materials.h
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`

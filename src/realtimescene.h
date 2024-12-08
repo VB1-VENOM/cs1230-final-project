@@ -6,11 +6,13 @@
 
 #include <map>
 #include <ranges>
+
 #include "utils/scenedata.h"
 #include "camera.h"
 #include "objects/realtimeobject.h"
 #include "objects/collisionobject.h"
 #include "objects/playerobject.h"
+#include "objects/enemyobject.h"
 
 /// Analogous to RayTraceScene from project 3/4; represents a scene to be rendered in real-time
 /// An instance of this class is created each time the scene is changed in the GUI
@@ -90,6 +92,10 @@ private:
     // (it's fineeee, the meshes themselves aren't copied)
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
     std::optional<GLuint> m_phongShader;
+
+    // Helper function for initializing enemies
+    static std::vector<std::shared_ptr<EnemyObject>> createEnemies(std::vector<glm::vec3> enemy_positions,
+    std::shared_ptr<RealtimeScene> scene, std::shared_ptr<Camera> camera);
 
     // helper functions for passing uniforms to the shader (and checking for -1 locations)
     void passUniformMat4(const char* name, const glm::mat4& mat);
