@@ -1,5 +1,7 @@
 #include "spheremesh.h"
 
+#include <glm/ext/scalar_constants.hpp>
+
 SphereMesh::SphereMesh(int param1, int param2) : PrimitiveMesh(param1, param2) {}
 
 void SphereMesh::generateVertexData() {
@@ -109,9 +111,9 @@ glm::vec2 SphereMesh::getUV(glm::vec3 pos, float theta) {
     // from lecture: phi = asin(y/r) = asin(2y) => phi in range [-pi/2, pi/2]
     // v = phi/2 + 1/2
     float asin = std::asin(2.f * pos.y);
-    float v = asin / M_PIf + 0.5f;
+    float v = asin /  glm::pi<float>() + 0.5f;
     // for some reason we need a 1 - theta / (2 * M_PIf) here instead of theta / (2 * M_PIf)???  idk why
-    float u = 1 - theta / (2 * M_PIf);
+    float u = 1 - theta / (2 *  glm::pi<float>());
 
     return {u, v};
 }

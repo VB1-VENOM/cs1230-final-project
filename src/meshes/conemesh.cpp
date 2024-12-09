@@ -1,5 +1,7 @@
 #include "conemesh.h"
 
+#include <glm/ext/scalar_constants.hpp>
+
 #define HEIGHT 1.0f
 #define RADIUS_BOTTOM 0.5f
 
@@ -205,7 +207,7 @@ glm::vec2 ConeMesh::getUV(glm::vec3 pos, ConeFaceType face, float theta) {
         case ConeFaceType::SIDE: {
             float v = 0.5f + pos.y;
             // for some reason we need a 1 - theta / (2 * M_PIf) here instead of theta / (2 * M_PIf)???  idk why
-            float u = 1 - theta / (2 * M_PIf);
+            float u = 1 - theta / (2 * glm::pi<float>());
             return {u, v};
         }
         default:

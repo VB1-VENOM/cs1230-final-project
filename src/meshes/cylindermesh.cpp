@@ -1,5 +1,7 @@
 #include "cylindermesh.h"
 
+#include <glm/ext/scalar_constants.hpp>
+
 #define HEIGHT 1.0f
 #define RADIUS 0.5f
 
@@ -183,7 +185,7 @@ glm::vec2 CylinderMesh::getUV(glm::vec3 pos, CylinderFaceType face, float theta)
             return {pos.x + 0.5f, pos.z + 0.5f};
         case CylinderFaceType::SIDE: {
             // for some reason we need a 1 - theta / (2 * M_PIf) here instead of theta / (2 * M_PIf)???  idk why
-            float u = 1 - theta / (2 * M_PIf);
+            float u = 1 - theta / (2 *  glm::pi<float>());
             float v = 0.5f + pos.y;
             return {u, v};
         }
