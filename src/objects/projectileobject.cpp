@@ -28,14 +28,24 @@ void ProjectileObject::tick(double elapsedSeconds) {
     glm::vec3 translation = m_direction * m_speed * (float)elapsedSeconds;
 
     // Check for collisions
-    auto collisionInfoOpt = getCollisionInfo(translation);
-    if (collisionInfoOpt.has_value()) {
+    auto collisionInfo = getCollisionInfo(translation);
+
+
+    if (collisionInfo.has_value())
+    {
         // On collision, destroy the projectile
+        auto playerObject = std::dynamic_pointer_cast<PlayerObject>(collisionInfo->object);
+        if (!playerObject) {
 
-        collisionSphereEffect();
+            collisionSphereEffect();
 
-        queueFree();
-        return;
+            queueFree();
+            return;
+        }
+        else
+        {
+            std::cout << "Collied with player object" << std::endl;
+        }
     }
 
     // Move the projectile
