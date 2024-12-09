@@ -7,6 +7,7 @@
 #include "utils/sceneparser.h"
 #include "meshes/primitivemesh.h"
 #include "aabb.h"
+#include "utils/imagereader.h"
 
 /// only used as a convenience for the factory function in RealtimeScene
 enum class RealtimeObjectType {
@@ -47,6 +48,20 @@ public:
     bool isQueuedFree() const;
 
     std::shared_ptr<RealtimeScene> scene() const;
+
+    /** Returns whether this object uses a texture; that is, if its material's textureMap has isUsed set,
+     * and if the texture file path was successfully loaded as an image.
+     * @return true if this object uses a texture, false otherwise
+     */
+    bool usesTexture() const;
+
+    bool glTexAllocated() const;
+
+    void allocateGLTex();
+
+    GLuint glTexID() const;
+
+    void finish();
 private:
     std::weak_ptr<RealtimeScene> m_scene;
     bool m_shouldRender;
@@ -56,6 +71,10 @@ private:
     glm::mat3 m_inverseOfTranspose3x3CTM;
     SceneMaterial m_material;
     PrimitiveType m_type;
+    /// nullptr if this object does not use a texture
+    std::unique_ptr<Image> m_texture;
+    GLuint m_glTexID;
+    bool m_glTexAllocated = false;
 };
 
 

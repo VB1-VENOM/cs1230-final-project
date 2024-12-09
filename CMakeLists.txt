@@ -77,6 +77,10 @@ add_executable(${PROJECT_NAME}
     src/utils/helpers.cpp
     src/objects/ncprojectileobject.cpp
     src/objects/ncprojectileobject.h
+        src/utils/imagereader.cpp
+        src/utils/imagereader.h
+        src/utils/rgba.h
+        src/utils/stb_image.h
 
 )
 

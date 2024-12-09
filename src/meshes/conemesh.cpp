@@ -10,25 +10,27 @@ void ConeMesh::generateVertexData() {
     makeSides();
 }
 
-void ConeMesh::makeCapCenterTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight) {
+void ConeMesh::makeCapCenterTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight, float leftTheta, float rightTheta) {
     glm::vec3 normal = glm::normalize(center);
-    pushVertex(center, normal);
-    pushVertex(bottomLeft, normal);
-    pushVertex(bottomRight, normal);
+    pushVertex(center, normal, getUV(center, ConeFaceType::BASE, (leftTheta + rightTheta) / 2));
+    pushVertex(bottomLeft, normal, getUV(bottomLeft, ConeFaceType::BASE, leftTheta));
+    pushVertex(bottomRight, normal, getUV(bottomRight, ConeFaceType::BASE, rightTheta));
 }
 
 void ConeMesh::makeCapTile(glm::vec3 topLeft,
                        glm::vec3 topRight,
                        glm::vec3 bottomLeft,
-                       glm::vec3 bottomRight) {
+                       glm::vec3 bottomRight,
+                       float leftTheta,
+                       float rightTheta) {
     glm::vec3 normal = glm::normalize(glm::vec3(0, topLeft.y, 0));
-    pushVertex(topLeft, normal);
-    pushVertex(bottomLeft, normal);
-    pushVertex(topRight, normal);
+    pushVertex(topLeft, normal, getUV(topLeft, ConeFaceType::BASE, leftTheta));
+    pushVertex(bottomLeft, normal, getUV(bottomLeft, ConeFaceType::BASE, leftTheta));
+    pushVertex(topRight, normal, getUV(topRight, ConeFaceType::BASE, rightTheta));
 
-    pushVertex(topRight, normal);
-    pushVertex(bottomLeft, normal);
-    pushVertex(bottomRight, normal);
+    pushVertex(topRight, normal, getUV(topRight, ConeFaceType::BASE, rightTheta));
+    pushVertex(bottomLeft, normal, getUV(bottomLeft, ConeFaceType::BASE, leftTheta));
+    pushVertex(bottomRight, normal, getUV(bottomRight, ConeFaceType::BASE, rightTheta));
 }
 
 void ConeMesh::makeCapWedge(float currentTheta, float nextTheta, float y) {
@@ -55,7 +57,7 @@ void ConeMesh::makeCapWedge(float currentTheta, float nextTheta, float y) {
                 y,
                 nextDistFromCenter * glm::sin(nextTheta)
         );
-        makeCapTile(topLeft, topRight, bottomLeft, bottomRight);
+        makeCapTile(topLeft, topRight, bottomLeft, bottomRight, currentTheta, nextTheta);
     }
     // center piece of this wedge
     float centerPieceEdgeLength = RADIUS_BOTTOM / (float)param1();
@@ -70,7 +72,7 @@ void ConeMesh::makeCapWedge(float currentTheta, float nextTheta, float y) {
             y,
             centerPieceEdgeLength * glm::sin(nextTheta)
     );
-    makeCapCenterTile(center, bottomLeft, bottomRight);
+    makeCapCenterTile(center, bottomLeft, bottomRight, currentTheta, nextTheta);
 }
 
 void ConeMesh::makeCap() {
@@ -86,7 +88,7 @@ void ConeMesh::makeCap() {
     }
 }
 
-void ConeMesh::makeTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight) {
+void ConeMesh::makeTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight, float leftTheta, float rightTheta) {
     // all credit to the anonymous student on #290 (https://edstem.org/us/courses/65180/discussion/5660567)
     // for this tip normal calculation
     glm::vec3 tipNormal = getSideTileNormal(bottomLeft) + getSideTileNormal(bottomRight);
@@ -94,9 +96,9 @@ void ConeMesh::makeTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bot
     tipNormal = glm::normalize(tipNormal);
     tipNormal = glm::vec3(tipNormal.x, 0.5, tipNormal.z);
     tipNormal = glm::normalize(tipNormal);
-    pushVertex(center, glm::normalize(tipNormal));
-    pushVertex(bottomLeft, getSideTileNormal(bottomLeft));
-    pushVertex(bottomRight, getSideTileNormal(bottomRight));
+    pushVertex(center, glm::normalize(tipNormal), getUV(center, ConeFaceType::SIDE, (leftTheta + rightTheta) / 2));
+    pushVertex(bottomLeft, getSideTileNormal(bottomLeft), getUV(bottomLeft, ConeFaceType::SIDE, leftTheta));
+    pushVertex(bottomRight, getSideTileNormal(bottomRight), getUV(bottomRight, ConeFaceType::SIDE, rightTheta));
 }
 
 glm::vec3 ConeMesh::getSideTileNormal(glm::vec3 point) {
@@ -106,15 +108,17 @@ glm::vec3 ConeMesh::getSideTileNormal(glm::vec3 point) {
 void ConeMesh::makeSideTile(glm::vec3 topLeft,
                         glm::vec3 topRight,
                         glm::vec3 bottomLeft,
-                        glm::vec3 bottomRight) {
+                        glm::vec3 bottomRight,
+                        float leftTheta,
+                        float rightTheta) {
     // these vertices should be on the implicit cone, so the normal can just be computed the same way
-    pushVertex(topLeft, getSideTileNormal(topLeft));
-    pushVertex(bottomRight, getSideTileNormal(bottomRight));
-    pushVertex(topRight, getSideTileNormal(topRight));
+    pushVertex(topLeft, getSideTileNormal(topLeft), getUV(topLeft, ConeFaceType::SIDE, leftTheta));
+    pushVertex(bottomRight, getSideTileNormal(bottomRight), getUV(bottomRight, ConeFaceType::SIDE, rightTheta));
+    pushVertex(topRight, getSideTileNormal(topRight), getUV(topRight, ConeFaceType::SIDE, rightTheta));
 
-    pushVertex(topLeft, getSideTileNormal(topLeft));
-    pushVertex(bottomLeft, getSideTileNormal(bottomLeft));
-    pushVertex(bottomRight, getSideTileNormal(bottomRight));
+    pushVertex(topLeft, getSideTileNormal(topLeft), getUV(topLeft, ConeFaceType::SIDE, leftTheta));
+    pushVertex(bottomLeft, getSideTileNormal(bottomLeft), getUV(bottomLeft, ConeFaceType::SIDE, leftTheta));
+    pushVertex(bottomRight, getSideTileNormal(bottomRight), getUV(bottomRight, ConeFaceType::SIDE, rightTheta));
 }
 
 void ConeMesh::makeSide(float currentTheta, float nextTheta) {
@@ -136,7 +140,7 @@ void ConeMesh::makeSide(float currentTheta, float nextTheta) {
                 currentPercentToBottom * RADIUS_BOTTOM * glm::sin(nextTheta)
         );
         if (j == param1() - 1) {
-            makeTipTile(glm::vec3(0, nextY, 0), bottomLeft, bottomRight);
+            makeTipTile(glm::vec3(0, nextY, 0), bottomLeft, bottomRight, currentTheta, nextTheta);
         } else {
             glm::vec3 topLeft = glm::vec3(
                     nextPercentToBottom * RADIUS_BOTTOM * glm::cos(currentTheta),
@@ -148,7 +152,7 @@ void ConeMesh::makeSide(float currentTheta, float nextTheta) {
                     nextY,
                     nextPercentToBottom * RADIUS_BOTTOM * glm::sin(nextTheta)
             );
-            makeSideTile(topLeft, topRight, bottomLeft, bottomRight);
+            makeSideTile(topLeft, topRight, bottomLeft, bottomRight, currentTheta, nextTheta);
         }
     }
 }
@@ -177,19 +181,34 @@ int ConeMesh::getExpectedVectorSize() {
            * std::max(param1() - 1, 0) // number of normal tiles per side
            * 2 // number of triangles per tile
            * 3 // number of vertices per triangle
-           * 6 // number of floats per vertex
+           * FLOATS_PER_VERTEX // number of floats per vertex
            + param2() // number of sides
            * 1 // number of tip tiles per side
            * 3 // number of vertices per triangle
-           * 6 // number of floats per vertex
+           * FLOATS_PER_VERTEX // number of floats per vertex
            + param2() // number of center triangles on one cap
              * 1 // number of caps
              * 3 // number of vertices triangle
-             * 6 // number of floats per vertex
+             * FLOATS_PER_VERTEX // number of floats per vertex
            + param2() // number of wedges on cap
              * 1 // number of caps
              * (std::max(param1() - 1, 0)) // number of tiles per wedge
              * 2 // number of triangles per tile
              * 3 // number of vertices per triangle
-             * 6; // number of floats per vertex
+             * FLOATS_PER_VERTEX; // number of floats per vertex
+}
+
+glm::vec2 ConeMesh::getUV(glm::vec3 pos, ConeFaceType face, float theta) {
+    switch (face) {
+        case ConeFaceType::BASE:
+            return {pos.x + 0.5f, pos.z + 0.5f}; // use bottom cap cylinder formula
+        case ConeFaceType::SIDE: {
+            float v = 0.5f + pos.y;
+            // for some reason we need a 1 - theta / (2 * M_PIf) here instead of theta / (2 * M_PIf)???  idk why
+            float u = 1 - theta / (2 * M_PIf);
+            return {u, v};
+        }
+        default:
+            throw std::runtime_error("Invalid cone intersection type");
+    }
 }
