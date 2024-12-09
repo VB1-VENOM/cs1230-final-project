@@ -1,5 +1,5 @@
 #version 330 core
-#define MAX_LIGHTS 8
+#define MAX_LIGHTS 16
 
 // https://stackoverflow.com/questions/34251648/enum-usage-for-bitwise-and-in-glsl
 const uint LIGHT_POINT       = 0x1u;
@@ -19,6 +19,7 @@ struct LightData {
 
 in vec3 positionWS;
 in vec3 normalWS;
+in vec2 uv;
 
 out vec4 fragColor;
 
@@ -31,6 +32,11 @@ uniform float kd;
 uniform vec3 cDiffuse;
 uniform int numLights;
 uniform LightData lights[MAX_LIGHTS];
+uniform bool usesTexture;
+uniform float blend;
+uniform float repeatU;
+uniform float repeatV;
+uniform sampler2D objTexture;
 
 // specular
 uniform float ks;
@@ -92,19 +98,42 @@ float getFalloffFactor(vec3 directionToLight, LightData light) {
     return 1.0;
 }
 
+vec3 getTextureColor() {
+    if (!usesTexture) {
+        // can't actually error in GLSL
+        // throw std::runtime_error("No texture map available");
+        return vec3(1.0);
+    }
+    float u = uv.x;
+    float v = uv.y;
+    if (repeatU <= 0 || repeatV <= 0) {
+        // throw std::runtime_error("Invalid numRepeats");
+        return vec3(1.0);
+    }
+    // i thinkkkk since texture sampling auto-wraps, we can just do this
+    u = u * repeatU;
+    v = (1- v) * repeatV;
+    return texture(objTexture, vec2(u, v)).rgb;
+}
+
 void main() {
     vec3 normalWSNormalized = normalize(normalWS);
 
     // ambient
     fragColor = vec4(ka * cAmbient, 1.0);
 
+    // texture stuff
+    vec3 diffuseFactor = kd * cDiffuse;
+    if (usesTexture) {
+        diffuseFactor = (1.0 - blend) * diffuseFactor + blend * getTextureColor();
+    }
 
     for (int i = 0; i < numLights; i++) {
         // diffuse
         vec3 dirToLight = getDirToLight(positionWS, lights[i]);
         float fAtt = getAttenuation(positionWS, lights[i]);
         float falloffFactor = getFalloffFactor(dirToLight, lights[i]);
-        fragColor += vec4(fAtt * falloffFactor * max(dot(normalWSNormalized, dirToLight), 0.0) * kd * lights[i].color * cDiffuse, 0.0);
+        fragColor += vec4(fAtt * falloffFactor * max(dot(normalWSNormalized, dirToLight), 0.0) * diffuseFactor * lights[i].color, 0.0);
 
         // specular
         vec3 reflectedLight = reflect(vec3(0.0) - dirToLight, normalWSNormalized);

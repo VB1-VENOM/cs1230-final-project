@@ -9,6 +9,8 @@
 #include "utils/sceneparser.h"
 #include "aabb.h"
 
+#define FLOATS_PER_VERTEX 8
+
 /// Base class for all mesh objects; used to tessellate each primitive shape and generate the respective vertex data
 class PrimitiveMesh {
 public:
@@ -52,7 +54,7 @@ protected:
     /// Returns whether the vao and vbo have been allocated
     bool glAllocated() const;
     /// Pushes a vertex and normal to the vertex data vector
-    void pushVertex(glm::vec3 v, glm::vec3 n);
+    void pushVertex(glm::vec3 v, glm::vec3 n, glm::vec2 uv);
     std::vector<float> m_vertexData;
 private:
     /// Allocates the vao and vbo, and sets up the attributes in the vao

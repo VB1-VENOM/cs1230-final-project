@@ -50,6 +50,10 @@ void Realtime::finish() {
         mesh->deleteBuffers();
     }
 
+    if (isInited()) {
+        m_scene->finish();
+    }
+
     glDeleteProgram(m_filterShader);
     glDeleteProgram(m_phongShader);
     glDeleteVertexArrays(1, &m_fullscreen_vao);
@@ -101,7 +105,11 @@ void Realtime::initializeGL() {
     m_crosshairShader = ShaderLoader::createShaderProgram("resources/shaders/crosshair.vert", "resources/shaders/crosshair.frag");
     // set uniform texture loc for the filter shader TODO is this needed?
     glUseProgram(m_filterShader);
-    glUniform1i(glGetUniformLocation(m_filterShader, "texture"), 0);
+    glUniform1i(glGetUniformLocation(m_filterShader, "myTexture"), 0);
+    glUseProgram(0);
+    // set uniform texture loc for object textures in phong shader TODO is this needed?
+    glUseProgram(m_phongShader);
+    glUniform1i(glGetUniformLocation(m_phongShader, "objTexture"), 0);
     glUseProgram(0);
 
     for (auto& [_, mesh] : m_meshes) {
