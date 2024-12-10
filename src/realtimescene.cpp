@@ -18,7 +18,7 @@ const unsigned int SHADER_LIGHT_SPOT        = 0x4u;
 
 std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
                                                  float nearPlane, float farPlane,
-                                                 std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
+                                                 std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes, std::shared_ptr<bool> taken_damage) {
     RenderData renderData;
     if (!SceneParser::parse(sceneFilePath, renderData)) {
         std::cerr << "Failed to initialize scene: failed to parse scene file" << std::endl;
@@ -30,6 +30,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     }
     auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, renderData.cameraData, std::move(meshes)));
 
+    newScene->m_taken_damage = taken_damage;
     // all this below initialization must be done in this factory function, not the constructor, due to needing to pass a shared_ptr
     // to this scene to the objects
 
@@ -58,7 +59,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 
     //create enemies
     std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,1.5,1.5)};
-    auto enemyList = createEnemies(enemyPositions,newScene,newScene->m_camera);
+    auto enemyList = newScene->createEnemies(enemyPositions,newScene);
     for (auto enemy : enemyList)
     {
         auto enemyCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(enemy));
@@ -78,7 +79,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 }
 
 std::vector<std::shared_ptr<EnemyObject>> RealtimeScene::createEnemies(std::vector<glm::vec3> enemy_positions,
-    std::shared_ptr<RealtimeScene> scene, std::shared_ptr<Camera> camera)
+    std::shared_ptr<RealtimeScene> scene)
 {
     std::vector<std::shared_ptr<EnemyObject>> enemies;
     for(glm::vec3 position : enemy_positions)
@@ -88,7 +89,7 @@ std::vector<std::shared_ptr<EnemyObject>> RealtimeScene::createEnemies(std::vect
         glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
         RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
 
-        enemies.push_back(std::make_shared<EnemyObject>(enemyShapeData, scene, camera));
+        enemies.push_back(std::make_shared<EnemyObject>(enemyShapeData, scene, m_camera, m_taken_damage));
 
     }
     return enemies;

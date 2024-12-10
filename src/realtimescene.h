@@ -23,7 +23,7 @@ public:
     /// Note: the `meshes` map is copied to avoid reference issues; the meshes themselves are not copied
     static std::shared_ptr<RealtimeScene> init(int width, int height, const std::string& sceneFilePath,
                                              float nearPlane, float farPlane,
-                                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
+                                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes, std::shared_ptr<bool> taken_damage);
 
     /// Paints every object in the scene; to be called in paintGL
     void paintObjects();
@@ -95,9 +95,7 @@ private:
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
     std::optional<GLuint> m_phongShader;
 
-    // Helper function for initializing enemies
-    static std::vector<std::shared_ptr<EnemyObject>> createEnemies(std::vector<glm::vec3> enemy_positions,
-    std::shared_ptr<RealtimeScene> scene, std::shared_ptr<Camera> camera);
+    std::shared_ptr<bool> m_taken_damage;
 
     // helper functions for passing uniforms to the shader (and checking for -1 locations)
     void passUniformMat4(const char* name, const glm::mat4& mat);
@@ -113,6 +111,11 @@ private:
 
     /// convert enum class LightType to the corresponding uniform value
     static GLuint lightTypeToUniform(LightType type);
+
+
+    // Helper function for initializing enemies
+    std::vector<std::shared_ptr<EnemyObject>> createEnemies(std::vector<glm::vec3> enemy_positions,
+        std::shared_ptr<RealtimeScene> scene);
 };
 
 #pragma clang diagnostic pop
