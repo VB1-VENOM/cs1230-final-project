@@ -250,7 +250,7 @@ void RealtimeScene::tick(double elapsedSeconds) {
 
     // Add elapsed time to the accumulator
 
-    updateDynamicCity(m_camera->pos(), 10.0f);
+    updateDynamicCity(m_camera->pos(), 100.0f);
 
 
 
