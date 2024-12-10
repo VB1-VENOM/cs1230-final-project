@@ -14,7 +14,7 @@
 #include "objects/playerobject.h"
 
 #include <unordered_set>
-
+#define GRACE_PERIOD_MS 8000
 
 struct pair_hash {
     template <typename T1, typename T2>
@@ -156,6 +156,12 @@ private:
     // Helper function for initializing enemies
     std::vector<std::shared_ptr<EnemyObject>> createEnemies(std::vector<glm::vec3> enemy_positions,
         std::shared_ptr<RealtimeScene> scene);
+
+    void addEnemy(glm::vec3 position);
+
+    //grace period for when you spawn in
+    std::chrono::time_point<std::chrono::steady_clock> m_enemy_spawn_start;
+
 };
 
 #pragma clang diagnostic pop
