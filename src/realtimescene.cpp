@@ -26,57 +26,6 @@ void printActiveGrids(const std::unordered_set<std::pair<int, int>, pair_hash>& 
     }
 }
 
-// std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
-//                                                  float nearPlane, float farPlane,
-//                                                  std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
-//     RenderData renderData;
-//     if (!SceneParser::parse(sceneFilePath, renderData)) {
-//         std::cerr << "Failed to initialize scene: failed to parse scene file" << std::endl;
-//         return {nullptr};
-//     }
-//     if (renderData.lights.size() > MAX_LIGHTS) {
-//         std::cerr << "Failed to initialize scene: too many lights" << std::endl;
-//         return {nullptr};
-//     }
-//     auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, renderData.cameraData, std::move(meshes)));
-
-//     // all this below initialization must be done in this factory function, not the constructor, due to needing to pass a shared_ptr
-//     // to this scene to the objects
-
-//     // TODO currently all objects imported from the scene file will be static collidable objects.
-//     //  ideally we'd extend the scene format to allow it to specify what physics properties an object has
-//     newScene->m_objects.reserve(renderData.shapes.size() + 1);
-//     newScene->m_collisionObjects.reserve(renderData.shapes.size() + 1);
-//     for (const auto& shape : renderData.shapes) {
-//         auto staticObject = std::make_shared<StaticObject>(shape, newScene);
-//         auto collisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(staticObject));
-//         auto object = std::static_pointer_cast<RealtimeObject>(staticObject);
-//         newScene->m_objects.push_back(object);
-//         newScene->m_collisionObjects.push_back(collisionObject);
-//     }
-//     // create player object TODO better way of doing this
-//     SceneMaterial defaultMaterial; // Ensure SceneMaterial has a default constructor
-//     ScenePrimitive playerPrimitive{PrimitiveType::PRIMITIVE_CUBE, defaultMaterial};
-
-//     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
-//     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
-//     RenderShapeData playerShapeData = RenderShapeData(playerPrimitive,playerCTM);
-//     newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera);
-//     auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(newScene->m_playerObject));
-//     auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(newScene->m_playerObject);
-//     newScene->m_objects.push_back(playerRealtimeObject);
-//     newScene->m_collisionObjects.push_back(playerCollisionObject);
-
-//     newScene->m_lights.reserve(MAX_LIGHTS);
-//     for (const auto& light : renderData.lights) {
-//         // normalizing is important (and faster to do here than on the gpu for every fragment)
-//         newScene->m_lights.emplace_back(light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
-//                               light.penumbra, light.angle, light.width, light.height);
-//     }
-//     //newScene=generateProceduralCity();
-//     return newScene;
-// }
- //std::unordered_set<std::pair<int, int>, pair_hash> RealtimeScene::activeGrids;
 std::unordered_set<std::pair<int, int>, pair_hash> RealtimeScene::m_activeGrids;
 
 std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
