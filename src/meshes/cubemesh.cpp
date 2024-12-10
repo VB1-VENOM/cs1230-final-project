@@ -12,11 +12,29 @@ AABB CubeMesh::computeAABB(const glm::mat4& ctm) const {
         for (float y : {-0.5f, 0.5f}) {
             for (float z : {-0.5f, 0.5f}) {
                 glm::vec3 transformed = glm::vec3(ctm * glm::vec4(x, y, z, 1));
-                if (!min || (transformed.x <= min->x && transformed.y <= min->y && transformed.z <= min->z)) {
+                if (!min) {
                     min = transformed;
                 }
-                if (!max || (transformed.x >= max->x && transformed.y >= max->y && transformed.z >= max->z)) {
+                if (!max) {
                     max = transformed;
+                }
+                if (transformed.x < min->x) {
+                    min->x = transformed.x;
+                }
+                if (transformed.y < min->y) {
+                    min->y = transformed.y;
+                }
+                if (transformed.z < min->z) {
+                    min->z = transformed.z;
+                }
+                if (transformed.x > max->x) {
+                    max->x = transformed.x;
+                }
+                if (transformed.y > max->y) {
+                    max->y = transformed.y;
+                }
+                if (transformed.z > max->z) {
+                    max->z = transformed.z;
                 }
             }
         }

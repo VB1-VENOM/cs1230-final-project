@@ -21,6 +21,14 @@ ProjectileObject::ProjectileObject(const RenderShapeData& data,
           m_isBullet(isBullet)
 {
     setShouldRender(true);
+    setCollisionFilter([](std::shared_ptr<CollisionObject> object) {
+        // Don't collide with the player
+        if (std::dynamic_pointer_cast<PlayerObject>(object)) {
+            return false;
+        } else {
+            return true;
+        }
+    });
 }
 
 void ProjectileObject::tick(double elapsedSeconds) {
@@ -31,21 +39,12 @@ void ProjectileObject::tick(double elapsedSeconds) {
     auto collisionInfo = getCollisionInfo(translation);
 
 
-    if (collisionInfo.has_value())
-    {
+    if (collisionInfo.has_value()) {
         // On collision, destroy the projectile
-        auto playerObject = std::dynamic_pointer_cast<PlayerObject>(collisionInfo->object);
-        if (!playerObject) {
+        collisionSphereEffect();
 
-            collisionSphereEffect();
-
-            queueFree();
-            return;
-        }
-        else
-        {
-            std::cout << "Collied with player object" << std::endl;
-        }
+        queueFree();
+        return;
     }
 
     // Move the projectile
@@ -64,8 +63,8 @@ void ProjectileObject::tick(double elapsedSeconds) {
 void ProjectileObject::collisionSphereEffect()
 {
     int numProjectiles = 500; // Number of projectiles to spawn
-    float speed = 50.0f;     // Speed of the additional projectiles
-    float maxDistance = 100.0f; // Max distance for the spawned projectiles
+    float speed = 5.0f;     // Speed of the additional projectiles
+    float maxDistance = 1.0f; // Max distance for the spawned projectiles
     std::cout << "ENtering sphere effect" << std::endl;
     for (int i = 0; i < numProjectiles; ++i) {
         // Generate a random direction for the new projectile
@@ -79,7 +78,7 @@ void ProjectileObject::collisionSphereEffect()
         ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_SPHERE,
             SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
         glm::mat4 projectileCTM = this->CTM();
-        projectileCTM = glm::scale(projectileCTM, glm::vec3(0.01f)); // Smaller spheres
+        projectileCTM = glm::scale(projectileCTM, glm::vec3(0.1f)); // Smaller spheres
         projectileCTM = glm::translate(projectileCTM, randomDirection);
 
         RenderShapeData projectileData{projectilePrimitive, projectileCTM};

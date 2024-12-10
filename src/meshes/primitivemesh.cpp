@@ -31,7 +31,7 @@ AABB PrimitiveMesh::computeAABB(const glm::mat4& ctm) const {
 
     std::optional<glm::vec3> min = std::nullopt;
     std::optional<glm::vec3> max = std::nullopt;
-    for (size_t i = 0; i < m_vertexData.size(); i += 6) {
+    for (size_t i = 0; i < m_vertexData.size(); i += FLOATS_PER_VERTEX) {
         glm::vec3 transformed = glm::vec3(ctm * glm::vec4(m_vertexData[i], m_vertexData[i + 1], m_vertexData[i + 2], 1));
         if (!min) {
             min = transformed;

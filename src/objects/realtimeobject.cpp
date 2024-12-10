@@ -22,7 +22,9 @@ m_queuedFree(false) {
 }
 
 void RealtimeObject::translate(const glm::vec3& translation) {
-    m_ctm = glm::translate(m_ctm, translation);
+    // LOL GLM TRANSLATE RIGHT MULTIPLIES
+    glm::mat4 transMatrix = glm::translate(glm::mat4(1.f), translation);
+    m_ctm = transMatrix * m_ctm;
     m_inverseOfTranspose3x3CTM = glm::inverse(glm::transpose(glm::mat3(m_ctm)));
 }
 
