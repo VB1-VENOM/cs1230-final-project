@@ -152,15 +152,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 
     //create enemies
     std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,15 ,1.5)};
-    auto enemyList = newScene->createEnemies(enemyPositions,newScene);
-    for (auto enemy : enemyList)
-    {
-        auto enemyCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(enemy));
-        auto enemyRealtimeObject = std::static_pointer_cast<RealtimeObject>(enemy);
 
-        newScene->m_collisionObjects.push_back(enemyCollisionObject);
-        newScene->m_objects.push_back(enemyRealtimeObject);
-    }
     for (const auto& light : renderData.lights) {
         // normalizing is important (and faster to do here than on the gpu for every fragment)
         newScene->m_lights->push_back({light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
