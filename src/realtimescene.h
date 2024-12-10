@@ -47,7 +47,7 @@ public:
     void updateSettings(float nearPlane, float farPlane);
 
     /// Passes the shader ID to the scene (can't be done in the constructor because the shader isn't created yet)
-    void initShader(GLuint shader);
+    void initShader(GLuint phongShader);
     /// Returns whether the shader has been initialized
     bool shaderInitialized() const;
 
@@ -111,6 +111,13 @@ private:
 
     /// convert enum class LightType to the corresponding uniform value
     static GLuint lightTypeToUniform(LightType type);
+
+    //Skybox stuff
+    std::shared_ptr<RealtimeObject> m_skyboxObject;
+    GLuint m_skyboxTextureID;
+    // GLuint loadCubemap(std::vector<std::string> faces);
+    std::optional<GLuint> m_skyboxShader;
+
 
 
     // Helper function for initializing enemies

@@ -77,6 +77,12 @@ bool RealtimeObject::isQueuedFree() const {
     return m_queuedFree;
 }
 
+void RealtimeObject::setTexture(GLuint textureID) {
+    m_glTexID = textureID;
+    m_glTexAllocated = true;  // Mark the texture as allocated
+}
+
+
 bool RealtimeObject::usesTexture() const {
     return m_material.textureMap.isUsed && m_texture != nullptr;
 }

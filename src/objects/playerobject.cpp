@@ -134,6 +134,7 @@ void PlayerObject::spawnBullet() {
     // Create the projectile's render shape data
     ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_SPHERE,
                                        SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
+
     glm::mat4 projectileCTM =  glm::translate(glm::mat4(1.f), spawnPosition);
     projectileCTM = glm::scale(projectileCTM, glm::vec3(0.2f));  // Scaling factor (make it smaller)
 

@@ -104,6 +104,8 @@ void Realtime::initializeGL() {
     m_phongShader = ShaderLoader::createShaderProgram("resources/shaders/default.vert", "resources/shaders/default.frag");
     m_filterShader = ShaderLoader::createShaderProgram("resources/shaders/filter.vert", "resources/shaders/filter.frag");
     m_crosshairShader = ShaderLoader::createShaderProgram("resources/shaders/crosshair.vert", "resources/shaders/crosshair.frag");
+    // m_crosshairShader = ShaderLoader::createShaderProgram("resources/shaders/skybox.vert", "resources/shaders/skybox.frag");
+
     // set uniform texture loc for the filter shader TODO is this needed?
     glUseProgram(m_filterShader);
     glUniform1i(glGetUniformLocation(m_filterShader, "myTexture"), 0);

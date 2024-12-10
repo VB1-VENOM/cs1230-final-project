@@ -85,6 +85,10 @@ add_executable(${PROJECT_NAME}
         src/utils/imagereader.h
         src/utils/rgba.h
         src/utils/stb_image.h
+        src/meshes/skycubemesh.cpp
+        src/meshes/skycubemesh.h
+
+
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`

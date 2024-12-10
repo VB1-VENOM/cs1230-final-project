@@ -44,6 +44,9 @@ uniform vec3 cSpecular;
 uniform float shininess;
 uniform vec3 cameraPosWS;
 
+//skybox
+uniform bool isSkybox;
+
 float getAttenuation(vec3 pos, LightData light) {
     switch (light.type) {
         case LIGHT_DIRECTIONAL:
@@ -117,6 +120,10 @@ vec3 getTextureColor() {
 }
 
 void main() {
+    if (isSkybox) {
+        fragColor = vec4(getTextureColor(), 0);
+        return;
+    }
     vec3 normalWSNormalized = normalize(normalWS);
 
     // ambient
