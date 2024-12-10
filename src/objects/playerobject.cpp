@@ -160,6 +160,15 @@ void PlayerObject::spawnBullet() {
     ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_SPHERE,
                                        SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
 
+    projectilePrimitive.material.textureMap.isUsed = true;;
+    projectilePrimitive.material.textureMap.filename = "scenefiles/moretextures/green_halo.jpg";
+    projectilePrimitive.material.textureMap.repeatU = 1.0f;  // Set U repeat value
+    projectilePrimitive.material.textureMap.repeatV = 1.0f;  // Set V repeat value
+
+    projectilePrimitive.material.blend = 0.5f;  // Adjust blend factor as needed
+
+
+
     glm::mat4 projectileCTM =  glm::translate(glm::mat4(1.f), spawnPosition);
     projectileCTM = glm::scale(projectileCTM, glm::vec3(0.2f));  // Scaling factor (make it smaller)
 

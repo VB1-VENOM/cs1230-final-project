@@ -503,6 +503,14 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
     floorMaterial.cSpecular = SceneColor(0.2f, 0.2f, 0.2f, 1.0f);
     floorMaterial.shininess = 5.0f;
 
+    floorMaterial.textureMap.isUsed = true;
+    floorMaterial.textureMap.filename = "scenefiles/moretextures/doomfloor.jpg";
+
+    floorMaterial.blend = 0.5f;  // Adjust blend factor as needed
+    floorMaterial.textureMap.repeatU = 1.0f;  // Set U repeat value
+    floorMaterial.textureMap.repeatV = 1.0f;  // Set V repeat value
+
+
     // Add the floor to the scene
     addObject(PrimitiveType::PRIMITIVE_CUBE, floorTransform, floorMaterial, RealtimeObjectType::STATIC);
 
