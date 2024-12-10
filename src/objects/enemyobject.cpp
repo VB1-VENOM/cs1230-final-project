@@ -16,18 +16,14 @@
 
 EnemyObject::EnemyObject(RenderShapeData& data,
                          const std::shared_ptr<RealtimeScene>& scene,
-                         std::shared_ptr<Camera> camera)
+                         std::shared_ptr<Camera> camera, std::shared_ptr<bool> taken_damage)
     : CollisionObject(data, scene), m_renderShapeData(data)
 {
+    m_taken_damage = taken_damage;
     // enemy should render by default
     m_camera = std::move(camera);
     setShouldRender(true);
 }
-
-void EnemyObject::changeMaterial(const SceneMaterial& newMaterial) {
-    m_renderShapeData.primitive.material = newMaterial;
-}
-
 
 void EnemyObject::translate(const glm::vec3& translation) {
     super::translate(translation);
@@ -73,14 +69,13 @@ void EnemyObject::tick(double elapsedSeconds) {
         }
         translation += collisionInfoOpt->collisionCorrectionVec;
 
-        //has the enemy been shot?
-        // for (const std::shared_ptr<CollisionObject>& obj : collisionInfoOpt->objects) {
-        //     if (dynamic_pointer_cast<ProjectileObject>(obj)) {
-        //         std::cout << "shot " << std::endl;
-        //         queueFree(); //delete self
-        //         break;
-        //     }
-        // }
+        //if we collide with the player
+        for (const std::shared_ptr<CollisionObject>& obj : collisionInfoOpt->objects) {
+            if (std::shared_ptr<PlayerObject> player = std::dynamic_pointer_cast<PlayerObject>(obj)) {
+                *m_taken_damage = true;
+            }
+        }
+
     }
     // reset onGround if we are not on the ground
     if (m_onGround && !getCollisionInfo(glm::vec3(0.f, -EPSILON, 0.f)).has_value()) {
@@ -88,18 +83,24 @@ void EnemyObject::tick(double elapsedSeconds) {
     }
 
 
+    //reset the way that the damaged enemies look
+    if (std::chrono::steady_clock::now() > damage_end_time && health > 0) {
+        setMaterial(enemy_materials::enemyMaterial);
+    }
 
     translate(translation);
 }
 
+//called in ProjectileObject
 void EnemyObject::onShot() {
-
-    // m_renderShapeData = RenderShapeData();
-    changeMaterial(enemy_materials::damagedEnemyMaterial);
-
-
-    // queueFree();
-
+    health -= 1;
+    if (health <= 0)
+    {
+        queueFree();
+        return;
+    }
+    damage_end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ON_ENEMY_HIT_FLASH_MS);
+    setMaterial(enemy_materials::damagedEnemyMaterial);
 }
 
 #pragma clang diagnostic pop
