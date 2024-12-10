@@ -97,13 +97,12 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     cameraData.aperture = 0.0f;    // No depth of field effect
     cameraData.focalLength = 50.0f; // Default focal length
 
-    newScene->m_taken_damage = taken_damage;
     // all this below initialization must be done in this factory function, not the constructor, due to needing to pass a shared_ptr
     // to this scene to the objects
 
 
     auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, cameraData, std::move(meshes)));
-
+    newScene->m_taken_damage = taken_damage;
     // All initialization must be done here since a shared_ptr to this scene is required.
 
     // Add static collidable objects from the parsed scene.
@@ -124,7 +123,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 
     // Start player scaled up by 1 unit and centered at the camera position
     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
-    RenderShapeData playerShapeData = RenderShapeData(playerPrimitive, playerCTM);
+    RenderShapeData playerShapeData = RenderShapeData{playerPrimitive, playerCTM};
 
     newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera);
     auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(newScene->m_playerObject));
