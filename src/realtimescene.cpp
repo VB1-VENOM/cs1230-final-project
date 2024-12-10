@@ -106,6 +106,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     newScene->m_taken_damage = taken_damage;
     newScene->m_enemy_spawn_start = std::chrono::steady_clock::now() + std::chrono::milliseconds(GRACE_PERIOD_MS);
     // All initialization must be done here since a shared_ptr to this scene is required.
+    newScene->m_lights->reserve(MAX_LIGHTS);
 
     // Add static collidable objects from the parsed scene.
     newScene->m_objects.reserve(renderData.shapes.size() + 1);
@@ -127,7 +128,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
     RenderShapeData playerShapeData = RenderShapeData{playerPrimitive, playerCTM};
 
-    newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera);
+    newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera, newScene->m_lights);
     auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(newScene->m_playerObject));
     auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(newScene->m_playerObject);
     newScene->m_objects.push_back(playerRealtimeObject);
@@ -150,11 +151,19 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     RealtimeScene::m_activeGrids.insert({0, 0});
 
     //create enemies
+    std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,15 ,1.5)};
+    auto enemyList = newScene->createEnemies(enemyPositions,newScene);
+    for (auto enemy : enemyList)
+    {
+        auto enemyCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(enemy));
+        auto enemyRealtimeObject = std::static_pointer_cast<RealtimeObject>(enemy);
 
-    newScene->m_lights.reserve(MAX_LIGHTS);
+        newScene->m_collisionObjects.push_back(enemyCollisionObject);
+        newScene->m_objects.push_back(enemyRealtimeObject);
+    }
     for (const auto& light : renderData.lights) {
         // normalizing is important (and faster to do here than on the gpu for every fragment)
-        newScene->m_lights.push_back({light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
+        newScene->m_lights->push_back({light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
                               light.penumbra, light.angle, light.width, light.height});
     }
     //Create skybox object
@@ -186,7 +195,7 @@ RealtimeScene::RealtimeScene(int width, int height, float nearPlane, float farPl
     m_width(width), m_height(height), m_globalData(globalData),
     m_camera(std::make_shared<Camera>(width, height, cameraData, nearPlane, farPlane)),
     m_nearPlane(nearPlane), m_farPlane(farPlane),
-    m_meshes(std::move(meshes)) {}
+    m_meshes(std::move(meshes)), m_lights(std::make_shared<std::vector<SceneLightData>>(0)) {}
 
 void RealtimeScene::tick(double elapsedSeconds) {
     //static double accumulatedTime = 0.0;
@@ -241,7 +250,7 @@ void RealtimeScene::paintObjects() {
     glUseProgram(*m_phongShader);
     passUniformMat4("view", m_camera->viewMatrix());
     passUniformMat4("proj", m_camera->projectionMatrix());
-    passUniformInt("numLights", (int) m_lights.size());
+    passUniformInt("numLights", (int) m_lights->size());
     passUniformLightArray("lights", m_lights);
     passUniformVec3("cameraPosWS", m_camera->pos().xyz());
     passUniformFloat("ka", m_globalData.ka);
@@ -317,11 +326,11 @@ void RealtimeScene::passUniformVec3Array(const char* name, const std::vector<glm
     helpers::passUniformVec3Array(m_phongShader.value(), name, vecs);
 }
 
-void RealtimeScene::passUniformLightArray(const char* name, const std::vector<SceneLightData>& lights) {
+void RealtimeScene::passUniformLightArray(const char* name, std::shared_ptr<std::vector<SceneLightData>> lights) {
     // hmm this will cause allocations every time TODO maybe optimize
     std::string lightName = std::string(name);
-    for (int i = 0; i < lights.size(); i++) {
-        passUniformLight((lightName + "[" + std::to_string(i) + "]").c_str(), lights[i]);
+    for (int i = 0; i < lights->size(); i++) {
+        passUniformLight((lightName + "[" + std::to_string(i) + "]").c_str(), (*lights)[i]);
     }
 }
 
