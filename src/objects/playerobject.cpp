@@ -13,8 +13,9 @@
 
 PlayerObject::PlayerObject(const RenderShapeData& data,
                            const std::shared_ptr<RealtimeScene>& scene,
-                           std::shared_ptr<Camera> camera)
-    : super(data, scene), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt) {
+                           std::shared_ptr<Camera> camera,
+                           std::shared_ptr<std::vector<SceneLightData>> lights)
+    : super(data, scene), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt), m_lights(std::move(lights)), m_savedLight(std::nullopt) {
     // player shouldn't render by default
     setShouldRender(false);
     // don't collide with projectiles
@@ -128,6 +129,25 @@ void PlayerObject::tick(double elapsedSeconds) {
         spawnBullet();
         m_mouseButtonMap[GLFW_MOUSE_BUTTON_LEFT] = false;
     }
+
+    // THIS IS JANK: PLAYER SETS FIRST LIGHT IN SCENE TO PLAYER POSITION
+    if (!m_lights->empty()) {
+        if (!m_savedLight.has_value()) {
+            m_savedLight = m_lights->at(0);
+        }
+        m_lights->at(0).pos = glm::vec4(m_camera->pos(), 1.f);
+        m_lights->at(0).dir = glm::vec4(m_camera->look(), 0.f);
+    }
+
+    if (m_keyMap[GLFW_KEY_F]) {
+        m_keyMap[GLFW_KEY_F] = false;
+        m_flashLightOn = !m_flashLightOn;
+        if (!m_lights->empty() && m_flashLightOn) {
+            m_lights->at(0).color = m_savedLight->color;
+        } else {
+            m_lights->at(0).color = SceneColor{0.f, 0.f, 0.f, 1.f};
+        }
+    }
 }
 
 void PlayerObject::spawnBullet() {
@@ -139,6 +159,15 @@ void PlayerObject::spawnBullet() {
     // Create the projectile's render shape data
     ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_SPHERE,
                                        SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
+
+    projectilePrimitive.material.textureMap.isUsed = true;;
+    projectilePrimitive.material.textureMap.filename = "scenefiles/moretextures/green_halo.jpg";
+    projectilePrimitive.material.textureMap.repeatU = 1.0f;  // Set U repeat value
+    projectilePrimitive.material.textureMap.repeatV = 1.0f;  // Set V repeat value
+
+    projectilePrimitive.material.blend = 0.5f;  // Adjust blend factor as needed
+
+
 
     glm::mat4 projectileCTM =  glm::translate(glm::mat4(1.f), spawnPosition);
     projectileCTM = glm::scale(projectileCTM, glm::vec3(0.2f));  // Scaling factor (make it smaller)

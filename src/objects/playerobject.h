@@ -18,7 +18,7 @@
 class PlayerObject : public CollisionObject {
 public:
     PlayerObject(const RenderShapeData& data, const std::shared_ptr<RealtimeScene>& scene,
-                 std::shared_ptr<Camera> camera);
+                 std::shared_ptr<Camera> camera, std::shared_ptr<std::vector<SceneLightData>> lights);
     void tick(double elapsedSeconds) override;
     /// Moves the player and camera
     void translate(const glm::vec3& translation) override;
@@ -58,6 +58,10 @@ public:
 
 
 private:
+    std::shared_ptr<std::vector<SceneLightData>> m_lights;
+    bool m_flashLightOn = true;
+    std::optional<SceneLightData> m_savedLight;
+
     // we could avoid storing a new keymap/etc for each object, but i found this the simplest way of designing things
     std::unordered_map<int, bool> m_keyMap;
     std::unordered_map<int, bool> m_mouseButtonMap;

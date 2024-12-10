@@ -122,7 +122,7 @@ private:
     std::shared_ptr<Camera> m_camera;
 
 
-    std::vector<SceneLightData> m_lights;
+    std::shared_ptr<std::vector<SceneLightData>> m_lights;
     // need this to not be a reference to avoid C++ issues; so there's just two copies of this map at all times, oh welllll
     // (it's fineeee, the meshes themselves aren't copied)
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
@@ -137,7 +137,7 @@ private:
     void passUniformInt(const char* name, int value);
     void passUniformVec3(const char* name, const glm::vec3& vec);
     void passUniformVec3Array(const char* name, const std::vector<glm::vec3>& vecs);
-    void passUniformLightArray(const char* name, const std::vector<SceneLightData>& lights);
+    void passUniformLightArray(const char* name, std::shared_ptr<std::vector<SceneLightData>> lights);
     void passUniformLight(const char* name, SceneLightData type);
 
     GLint getUniformLocation(const char* name, bool checkValidLoc = true) const;
