@@ -8,6 +8,7 @@
 
 namespace enemy_materials {
     extern SceneMaterial enemyMaterial;
+    extern SceneMaterial damagedEnemyMaterial;
 }
 
 #endif //ENEMY_MATERIALS_H
