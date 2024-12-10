@@ -1,4 +1,4 @@
-#include "SkyCubeMesh.h"
+#include "skycubemesh.h"
 #include "primitivemesh.h"
 #include <optional>
 
