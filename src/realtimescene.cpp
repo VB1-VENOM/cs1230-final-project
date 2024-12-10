@@ -15,6 +15,36 @@ const unsigned int SHADER_LIGHT_POINT       = 0x1u;
 const unsigned int SHADER_LIGHT_DIRECTIONAL = 0x2u;
 const unsigned int SHADER_LIGHT_SPOT        = 0x4u;
 
+
+// GLuint loadCubemap(std::vector<std::string> faces) {
+//     GLuint cubemapID;
+//     glGenTextures(1, &cubemapID);
+//     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapID);
+//
+//     for (GLuint i = 0; i < faces.size(); i++) {
+//         // Load each face image using your custom loadImageFromFile function
+//         std::unique_ptr<Image> img = loadImageFromFile(faces[i]);
+//         if (!img) {
+//             std::cerr << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+//             continue;
+//         }
+//
+//         // Upload the image to the corresponding face of the cube map
+//         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+//                      0, GL_RGBA, img->width, img->height,
+//                      0, GL_RGBA, GL_UNSIGNED_BYTE, img->data.data());
+//     }
+//
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//
+//     return cubemapID;
+// }
+
+
 std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
                                                  float nearPlane, float farPlane,
                                                  std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
@@ -61,10 +91,22 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
                               light.penumbra, light.angle, light.width, light.height});
     }
     //Create skybox object
-    ScenePrimitive skyboxPrimitive{PrimitiveType::PRIMITIVE_SKYBOX, SceneMaterial()};
-    glm::mat4 skyboxCTM = glm::scale(glm::mat4(1.0f), glm::vec3(20.0f));  // Scale skybox to surround the scene
+    ScenePrimitive skyboxPrimitive{PrimitiveType::PRIMITIVE_SKYBOX,
+        SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
+    skyboxPrimitive.material.textureMap.isUsed = true;
+    skyboxPrimitive.material.textureMap.filename = "scenefiles/illuminate/textures/marsTexture.png";
+
+    skyboxPrimitive.material.blend = 0.5f;  // Adjust blend factor as needed
+    skyboxPrimitive.material.textureMap.repeatU = 1.0f;  // Set U repeat value
+    skyboxPrimitive.material.textureMap.repeatV = 1.0f;  // Set V repeat value
+
+    glm::mat4 skyboxCTM = glm::scale(glm::mat4(1.0f), glm::vec3(5.0f));  // Scale skybox to surround the scene
     RenderShapeData skyboxShapeData = RenderShapeData{skyboxPrimitive, skyboxCTM};
-    newScene->m_skyboxObject = std::make_shared<StaticObject>(skyboxShapeData, newScene);
+    auto skyboxObject = std::make_shared<RealtimeObject>(skyboxShapeData, newScene);
+    newScene->m_objects.push_back(skyboxObject);
+    //Add texture for skybox
+
+
     return newScene;
 }
 
@@ -302,6 +344,7 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(std::unique_ptr<Realtim
     m_objects.push_back(objectShared);
     return objectShared;
 }
+
 
 const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& RealtimeScene::meshes() const {
     return m_meshes;

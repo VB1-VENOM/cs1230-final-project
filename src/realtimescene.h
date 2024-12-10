@@ -110,6 +110,8 @@ private:
 
     //Skybox stuff
     std::shared_ptr<RealtimeObject> m_skyboxObject;
+    GLuint m_skyboxTextureID;
+    // GLuint loadCubemap(std::vector<std::string> faces);
 };
 
 #pragma clang diagnostic pop

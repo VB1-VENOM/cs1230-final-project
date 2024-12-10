@@ -59,7 +59,10 @@ public:
 
     void allocateGLTex();
 
+    void setTexture(GLuint textureID);
+
     GLuint glTexID() const;
+
 
     void finish();
 private:
