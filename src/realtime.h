@@ -14,6 +14,8 @@
 #include "utils/sceneparser.h"
 #include "realtimescene.h"
 
+//// TODO: find best amount of time
+#define ON_DAMAGE_SCREEN_RED_MS 300
 class Realtime {
 public:
     Realtime(int w, int h);
@@ -23,6 +25,7 @@ public:
     void initializeGL();                       // Called once at the start of the program
     void paintGL();                            // Called whenever the OpenGL context changes or by an update() request
     void resizeGL(int width, int height);      // Called when window size changes
+    void damageTaken();
     void keyPressEvent(int key);
     void keyReleaseEvent(int key);
     void mousePressEvent(int button);
@@ -40,7 +43,7 @@ private:
 
     // FBO stuff
     void makeFBO();
-    void paintScreenTexture(GLuint texture, bool enableInvert, bool enableBoxBlur) const;
+    void paintScreenTexture(GLuint texture, bool enableInvert, bool enableBoxBlur, bool enableDamageFilter, float distortion_factor) const;
     void initializeFullscreenQuad();
 
     void initializeCrosshair();
@@ -71,4 +74,8 @@ private:
     GLuint m_crosshairShader;
     GLuint m_skyboxShader;
     bool m_queuedBufferUpdate = false;
+
+    std::shared_ptr<bool> m_taken_damage = std::make_shared<bool>(false);
+    bool m_damage_filter = false;
+    std::chrono::time_point<std::chrono::steady_clock> m_damage_end_time;
 };

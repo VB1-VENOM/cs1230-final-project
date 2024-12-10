@@ -6,11 +6,13 @@
 
 #include <map>
 #include <ranges>
+
 #include "utils/scenedata.h"
 #include "camera.h"
 #include "objects/realtimeobject.h"
 #include "objects/collisionobject.h"
 #include "objects/playerobject.h"
+#include "objects/enemyobject.h"
 
 /// Analogous to RayTraceScene from project 3/4; represents a scene to be rendered in real-time
 /// An instance of this class is created each time the scene is changed in the GUI
@@ -21,7 +23,7 @@ public:
     /// Note: the `meshes` map is copied to avoid reference issues; the meshes themselves are not copied
     static std::shared_ptr<RealtimeScene> init(int width, int height, const std::string& sceneFilePath,
                                              float nearPlane, float farPlane,
-                                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
+                                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes, std::shared_ptr<bool> taken_damage);
 
     /// Paints every object in the scene; to be called in paintGL
     void paintObjects();
@@ -93,6 +95,8 @@ private:
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
     std::optional<GLuint> m_phongShader;
 
+    std::shared_ptr<bool> m_taken_damage;
+
     // helper functions for passing uniforms to the shader (and checking for -1 locations)
     void passUniformMat4(const char* name, const glm::mat4& mat);
     void passUniformMat3(const char* name, const glm::mat3& mat);
@@ -114,6 +118,11 @@ private:
     // GLuint loadCubemap(std::vector<std::string> faces);
     std::optional<GLuint> m_skyboxShader;
 
+
+
+    // Helper function for initializing enemies
+    std::vector<std::shared_ptr<EnemyObject>> createEnemies(std::vector<glm::vec3> enemy_positions,
+        std::shared_ptr<RealtimeScene> scene);
 };
 
 #pragma clang diagnostic pop

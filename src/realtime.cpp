@@ -34,7 +34,7 @@ void Realtime::tryInitScene() {
     }
 
     m_scene = RealtimeScene::init(m_width, m_height, settings.sceneFilePath,
-                                  settings.nearPlane, settings.farPlane, m_meshes);
+                                  settings.nearPlane, settings.farPlane, m_meshes, m_taken_damage);
 }
 
 bool Realtime::isInited() const {
@@ -70,6 +70,7 @@ void Realtime::initializeGL() {
 
     // m_timer = startTimer(1000/60);
     // m_elapsedTimer.start();
+    *m_taken_damage = false;
 
     // FBO variables
     m_defaultFBO = 0; // TODO
@@ -245,13 +246,31 @@ void Realtime::paintGL() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    paintScreenTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter);
+
+    if (*m_taken_damage == true) {
+        damageTaken();
+    }
+
+    float distortion_factor = 0.f;
+    if (std::chrono::steady_clock::now() > m_damage_end_time) {
+        m_damage_filter = false;
+    }
+    else {
+        distortion_factor = std::chrono::duration_cast<std::chrono::milliseconds>(m_damage_end_time - std::chrono::steady_clock::now()).count();
+        distortion_factor /= ON_DAMAGE_SCREEN_RED_MS;
+    }
+
+    paintScreenTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter, m_damage_filter, distortion_factor);
 }
 
-void Realtime::paintScreenTexture(GLuint texture, bool enableInvert, bool enableBoxBlur) const {
+void Realtime::paintScreenTexture(GLuint texture, bool enableInvert, bool enableBoxBlur, bool enableDamageFilter, float distortion_factor) const {
     glUseProgram(m_filterShader);
     helpers::passUniformInt(m_filterShader, "enableInvert", enableInvert);
     helpers::passUniformInt(m_filterShader, "enableBoxBlur", enableBoxBlur);
+    helpers::passUniformInt(m_filterShader, "enableDamage", enableDamageFilter);
+    helpers::passUniformFloat(m_filterShader, "distortionFactor", distortion_factor);
+
+
     // TODO is fbo_width/height correct? or should it be before device pixel ratio?
     helpers::passUniformInt(m_filterShader, "screenWidth", m_fbo_width);
     helpers::passUniformInt(m_filterShader, "screenHeight", m_fbo_height);
@@ -301,6 +320,12 @@ void Realtime::resizeGL(int w, int h) {
     } else {
         tryInitScene();
     }
+}
+
+void Realtime::damageTaken() {
+    *m_taken_damage = false;
+    m_damage_filter = true;
+    m_damage_end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ON_DAMAGE_SCREEN_RED_MS);
 }
 
 void Realtime::keyPressEvent(int key) {

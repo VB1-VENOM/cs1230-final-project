@@ -87,6 +87,10 @@ bool RealtimeObject::usesTexture() const {
     return m_material.textureMap.isUsed && m_texture != nullptr;
 }
 
+void RealtimeObject::setMaterial(SceneMaterial& material) {
+    m_material = material;
+}
+
 bool RealtimeObject::glTexAllocated() const {
     return m_glTexAllocated;
 }

@@ -54,6 +54,7 @@ public:
      * @return true if this object uses a texture, false otherwise
      */
     bool usesTexture() const;
+    void setMaterial(SceneMaterial& material);
 
     bool glTexAllocated() const;
 
