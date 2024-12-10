@@ -13,6 +13,7 @@
 #include <functional> // For std::hash
 #include "utils/helpers.h"
 #include "material_constants/enemy_materials.h"
+#include "objects/skyboxobject.h"
 
 
 #pragma clang diagnostic push
@@ -82,7 +83,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     SceneCameraData cameraData;
 
     // Position the camera high above the map
-    cameraData.pos = glm::vec4(1, 10, 1, 1.0f);
+    cameraData.pos = glm::vec4(1.5, 10, 1, 1.0f);
 
     // Look straight down at the center of the map (or slightly forward)
     cameraData.look = glm::vec4(0.0f, -1.0f, 0.0f, 0.0f); // Direction vector pointing downward
@@ -91,7 +92,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     cameraData.up = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f); // "Up" is forward relative to the map
 
     // Set the camera's field of view
-    cameraData.heightAngle = glm::radians(45.0f); // 45-degree vertical field of view
+    cameraData.heightAngle = glm::radians(60.0f); // 60-degree vertical field of view
 
     // Optional: Depth of field parameters
     cameraData.aperture = 0.0f;    // No depth of field effect
@@ -148,7 +149,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     RealtimeScene::m_activeGrids.insert({0, 0});
 
     //create enemies
-    std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,1.5,1.5)};
+    std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,15 ,1.5)};
     auto enemyList = newScene->createEnemies(enemyPositions,newScene);
     for (auto enemy : enemyList)
     {
@@ -177,9 +178,9 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 
     glm::mat4 skyboxCTM = glm::scale(glm::mat4(1.0f), glm::vec3(100.0f));  // Scale skybox to surround the scene
     RenderShapeData skyboxShapeData = RenderShapeData{skyboxPrimitive, skyboxCTM};
-    auto skyboxObject = std::make_shared<RealtimeObject>(skyboxShapeData, newScene);
-    newScene->m_objects.push_back(skyboxObject);
-    // newScene->m_skyboxObject = skyboxObject;
+    auto skyboxObject = std::make_shared<SkyboxObject>(skyboxShapeData, newScene, newScene->m_camera);
+    auto skyboxObjectRealtime = std::static_pointer_cast<RealtimeObject>(skyboxObject);
+    newScene->m_objects.push_back(skyboxObjectRealtime);
     //Add texture for skybox
     return newScene;
 }
