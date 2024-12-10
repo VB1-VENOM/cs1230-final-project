@@ -60,6 +60,11 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
         newScene->m_lights.push_back({light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
                               light.penumbra, light.angle, light.width, light.height});
     }
+    //Create skybox object
+    ScenePrimitive skyboxPrimitive{PrimitiveType::PRIMITIVE_SKYBOX, SceneMaterial()};
+    glm::mat4 skyboxCTM = glm::scale(glm::mat4(1.0f), glm::vec3(20.0f));  // Scale skybox to surround the scene
+    RenderShapeData skyboxShapeData = RenderShapeData{skyboxPrimitive, skyboxCTM};
+    newScene->m_skyboxObject = std::make_shared<StaticObject>(skyboxShapeData, newScene);
     return newScene;
 }
 
@@ -107,6 +112,18 @@ void RealtimeScene::paintObjects() {
     passUniformFloat("ks", m_globalData.ks);
     // set texture slot
     glActiveTexture(GL_TEXTURE0);
+
+    //First paint skybox
+    //
+    if (m_skyboxObject) {
+        // Render the skybox object
+        passUniformMat4("model", m_skyboxObject->CTM());  // Pass the skybox model matrix
+        passUniformMat3("inverseTransposeModel", m_skyboxObject->inverseTransposeCTM());
+
+        glBindVertexArray(m_skyboxObject->mesh()->vao());
+        glDrawArrays(GL_TRIANGLES, 0, (GLsizei)(m_skyboxObject->mesh()->vertexData().size() / 3));
+        glBindVertexArray(0);
+    }
     for (const auto& object : m_objects) {
         if (!object->shouldRender()) {
             continue;

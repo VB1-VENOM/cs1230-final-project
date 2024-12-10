@@ -62,44 +62,44 @@ void SkyCubeMesh::generateVertexData() {
     makeFace(glm::vec3(-0.5f,  0.5f, 0.5f),
              glm::vec3( 0.5f,  0.5f, 0.5f),
              glm::vec3(-0.5f, -0.5f, 0.5f),
-             CubeFaceType::POS_Z);
+             SkyCubeFaceType::POS_Z);
 
     // neg z face
     makeFace(glm::vec3(-0.5f, -0.5f, -0.5f),
              glm::vec3( 0.5f, -0.5f, -0.5f),
              glm::vec3(-0.5f,  0.5f, -0.5f),
-             CubeFaceType::NEG_Z);
+             SkyCubeFaceType::NEG_Z);
 
     // pos x face
     makeFace(glm::vec3(0.5f, -0.5f,  0.5f),
              glm::vec3(0.5f,  0.5f,  0.5f),
              glm::vec3(0.5f, -0.5f, -0.5f),
-             CubeFaceType::POS_X);
+             SkyCubeFaceType::POS_X);
 
     // neg x face
     makeFace(glm::vec3(-0.5f,  0.5f,  0.5f),
              glm::vec3(-0.5f, -0.5f,  0.5f),
              glm::vec3(-0.5f,  0.5f, -0.5f),
-             CubeFaceType::NEG_X);
+             SkyCubeFaceType::NEG_X);
 
     // pos y face
     makeFace(glm::vec3(-0.5f, 0.5f, -0.5f),
              glm::vec3( 0.5f, 0.5f, -0.5f),
              glm::vec3(-0.5f, 0.5f, 0.5f),
-             CubeFaceType::POS_Y);
+             SkyCubeFaceType::POS_Y);
 
     // neg y face
     makeFace(glm::vec3(-0.5f, -0.5f, 0.5f),
              glm::vec3( 0.5f, -0.5f, 0.5f),
              glm::vec3(-0.5f, -0.5f, -0.5f),
-             CubeFaceType::NEG_Y);
+             SkyCubeFaceType::NEG_Y);
 }
 
 
 void SkyCubeMesh::makeFace(glm::vec3 topLeft,
                         glm::vec3 topRight,
                         glm::vec3 bottomLeft,
-                        CubeFaceType face) {
+                        SkyCubeFaceType face) {
     float totalWidth = glm::length(topRight - topLeft);
     float tileWidth = totalWidth / (float) param1();
     float totalHeight = glm::length(bottomLeft - topLeft);
@@ -121,33 +121,37 @@ void SkyCubeMesh::makeFace(glm::vec3 topLeft,
 }
 
 void SkyCubeMesh::makeTile(glm::vec3 topLeft,
-                        glm::vec3 topRight,
-                        glm::vec3 bottomLeft,
-                        glm::vec3 bottomRight,
-                        CubeFaceType face) {
-    // Flip the normals to point inward by reversing the order of the cross products
-    pushVertex(topLeft, glm::normalize(glm::cross(topLeft - bottomLeft, topRight - topLeft)), getUV(topLeft, face));
-    pushVertex(bottomRight, glm::normalize(glm::cross(bottomRight - topLeft, bottomRight - bottomLeft)), getUV(bottomRight, face));
-    pushVertex(topRight, glm::normalize(glm::cross(topRight - bottomRight, topLeft - topRight)), getUV(topRight, face));
+                            glm::vec3 topRight,
+                            glm::vec3 bottomLeft,
+                            glm::vec3 bottomRight,
+                            SkyCubeFaceType face) {
+    // The normal is calculated the same way, but you reverse the winding order of the vertices.
+    glm::vec3 n = glm::normalize(glm::cross(bottomLeft - topLeft, bottomRight - topLeft));
 
-    pushVertex(topLeft, glm::normalize(glm::cross(topRight - topLeft, bottomRight - topLeft)), getUV(topLeft, face));
-    pushVertex(bottomLeft, glm::normalize(glm::cross(bottomLeft - bottomRight, bottomLeft - topLeft)), getUV(bottomLeft, face));
-    pushVertex(bottomRight, glm::normalize(glm::cross(bottomRight - topRight, bottomRight - bottomLeft)), getUV(bottomRight, face));
+    // Reverse the winding order by changing the vertex order:
+    pushVertex(topLeft, n, getUV(topLeft, face));         // Top-left
+    pushVertex(topRight, n, getUV(topRight, face));       // Top-right
+    pushVertex(bottomRight, n, getUV(bottomRight, face)); // Bottom-right
+
+    pushVertex(topLeft, n, getUV(topLeft, face));         // Top-left
+    pushVertex(bottomRight, n, getUV(bottomRight, face)); // Bottom-right
+    pushVertex(bottomLeft, n, getUV(bottomLeft, face));   // Bottom-left
 }
 
-glm::vec2 SkyCubeMesh::getUV(glm::vec3 pos, CubeFaceType face) {
+
+glm::vec2 SkyCubeMesh::getUV(glm::vec3 pos, SkyCubeFaceType face) {
     switch (face) {
-        case CubeFaceType::POS_X:
+        case SkyCubeFaceType::POS_X:
             return {-pos.z + 0.5f, pos.y + 0.5f};
-        case CubeFaceType::NEG_X:
+        case SkyCubeFaceType::NEG_X:
             return {pos.z + 0.5f, pos.y + 0.5f};
-        case CubeFaceType::POS_Y:
+        case SkyCubeFaceType::POS_Y:
             return {pos.x + 0.5f, -pos.z + 0.5f};
-        case CubeFaceType::NEG_Y:
+        case SkyCubeFaceType::NEG_Y:
             return {pos.x + 0.5f, pos.z + 0.5f};
-        case CubeFaceType::POS_Z:
+        case SkyCubeFaceType::POS_Z:
             return {pos.x + 0.5f, pos.y + 0.5f};
-        case CubeFaceType::NEG_Z:
+        case SkyCubeFaceType::NEG_Z:
             return {-pos.x + 0.5f, pos.y + 0.5f};
         default:
             throw std::runtime_error("Invalid cube intersection type");

@@ -1,7 +1,7 @@
 #pragma once
 #include "primitivemesh.h"
 
-enum class CubeFaceType {
+enum class SkyCubeFaceType {
     POS_X,
     NEG_X,
     POS_Y,
@@ -20,15 +20,15 @@ protected:
     int getExpectedVectorSize() override;
     void generateVertexData() override;
 private:
-    static glm::vec2 getUV(glm::vec3 pos, CubeFaceType face);
+    static glm::vec2 getUV(glm::vec3 pos, SkyCubeFaceType face);
 
     void makeTile(glm::vec3 topLeft,
                   glm::vec3 topRight,
                   glm::vec3 bottomLeft,
                   glm::vec3 bottomRight,
-                  CubeFaceType face);
+                  SkyCubeFaceType face);
     void makeFace(glm::vec3 topLeft,
                   glm::vec3 topRight,
                   glm::vec3 bottomLeft,
-                  CubeFaceType face);
+                  SkyCubeFaceType face);
 };

@@ -107,6 +107,9 @@ private:
 
     /// convert enum class LightType to the corresponding uniform value
     static GLuint lightTypeToUniform(LightType type);
+
+    //Skybox stuff
+    std::shared_ptr<RealtimeObject> m_skyboxObject;
 };
 
 #pragma clang diagnostic pop
