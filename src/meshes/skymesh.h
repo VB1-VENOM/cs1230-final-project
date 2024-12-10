@@ -1,9 +1,9 @@
 #pragma once
 #include "primitivemesh.h"
 
-class SkyCubeMesh : public PrimitiveMesh {
+class SkyMesh : public PrimitiveMesh {
 public:
-    SkyCubeMesh(int param1, int param2);
+    SkyMesh(int param1, int param2);
 protected:
     int getMinParam1() const override;
     int getMinParam2() const override;

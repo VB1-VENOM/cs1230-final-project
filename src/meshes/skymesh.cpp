@@ -1,10 +1,10 @@
-#include "skycubemesh.h"
+#include "skymesh.h"
 
 #include <glm/ext/scalar_constants.hpp>
 
-SkyCubeMesh::SkyCubeMesh(int param1, int param2) : PrimitiveMesh(param1, param2) {}
+SkyMesh::SkyMesh(int param1, int param2) : PrimitiveMesh(param1, param2) {}
 
-void SkyCubeMesh::generateVertexData() {
+void SkyMesh::generateVertexData() {
     float thetaStep = glm::radians(360.f / (float) param2());
     float currentTheta = 0 * thetaStep;
     float nextTheta = 1 * thetaStep;
@@ -17,24 +17,24 @@ void SkyCubeMesh::generateVertexData() {
     }
 }
 
-void SkyCubeMesh::makeTopTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight, float leftTheta, float rightTheta) {
+void SkyMesh::makeTopTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight, float leftTheta, float rightTheta) {
     pushVertex(center, glm::normalize(center), getUV(center, (leftTheta + rightTheta) / 2));
     pushVertex(bottomRight, glm::normalize(bottomRight), getUV(bottomRight, rightTheta));
     pushVertex(bottomLeft, glm::normalize(bottomLeft), getUV(bottomLeft, leftTheta));
 }
 
-void SkyCubeMesh::makeBottomTipTile(glm::vec3 center, glm::vec3 topLeft, glm::vec3 topRight, float leftTheta, float rightTheta) {
+void SkyMesh::makeBottomTipTile(glm::vec3 center, glm::vec3 topLeft, glm::vec3 topRight, float leftTheta, float rightTheta) {
     pushVertex(center, glm::normalize(center), getUV(center, (leftTheta + rightTheta) / 2));
     pushVertex(topLeft, glm::normalize(topLeft), getUV(topLeft, leftTheta));
     pushVertex(topRight, glm::normalize(topRight), getUV(topRight, rightTheta));
 }
 
-void SkyCubeMesh::makeTile(glm::vec3 topLeft,
-                          glm::vec3 topRight,
-                          glm::vec3 bottomLeft,
-                          glm::vec3 bottomRight,
-                          float leftTheta,
-                          float rightTheta) {
+void SkyMesh::makeTile(glm::vec3 topLeft,
+                       glm::vec3 topRight,
+                       glm::vec3 bottomLeft,
+                       glm::vec3 bottomRight,
+                       float leftTheta,
+                       float rightTheta) {
     pushVertex(topLeft, glm::normalize(topLeft), getUV(topLeft, leftTheta)); // sphere normal is just direction from origin
     pushVertex(topRight, glm::normalize(topRight), getUV(topRight, rightTheta));
     pushVertex(bottomRight, glm::normalize(bottomRight), getUV(bottomRight, rightTheta));
@@ -44,7 +44,7 @@ void SkyCubeMesh::makeTile(glm::vec3 topLeft,
     pushVertex(bottomLeft, glm::normalize(bottomLeft), getUV(bottomLeft, leftTheta));
 }
 
-void SkyCubeMesh::makeWedge(float currentTheta, float nextTheta) {
+void SkyMesh::makeWedge(float currentTheta, float nextTheta) {
     float phiStep = glm::radians(180.f / (float) param1());
     float currentPhi = 0 * phiStep;
     float nextPhi = 1 * phiStep;
@@ -87,15 +87,15 @@ void SkyCubeMesh::makeWedge(float currentTheta, float nextTheta) {
     }
 }
 
-int SkyCubeMesh::getMinParam1() const {
+int SkyMesh::getMinParam1() const {
     return 2;
 }
 
-int SkyCubeMesh::getMinParam2() const {
+int SkyMesh::getMinParam2() const {
     return 3;
 }
 
-int SkyCubeMesh::getExpectedVectorSize() {
+int SkyMesh::getExpectedVectorSize() {
     return param2() // number of wedges
            * std::max(param1() - 2, 0) // number of full tiles per wedge
            * 2 // number of triangles per tile
@@ -107,7 +107,7 @@ int SkyCubeMesh::getExpectedVectorSize() {
              * FLOATS_PER_VERTEX; // number of floats per vertex
 }
 
-glm::vec2 SkyCubeMesh::getUV(glm::vec3 pos, float theta) {
+glm::vec2 SkyMesh::getUV(glm::vec3 pos, float theta) {
     // from lecture: phi = asin(y/r) = asin(2y) => phi in range [-pi/2, pi/2]
     // v = phi/2 + 1/2
     float asin = std::asin(2.f * pos.y);
