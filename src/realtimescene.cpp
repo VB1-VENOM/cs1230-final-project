@@ -92,7 +92,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     }
     //Create skybox object
     ScenePrimitive skyboxPrimitive{PrimitiveType::PRIMITIVE_SKYBOX,
-        SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
+        SceneMaterial{SceneColor{0.f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
     skyboxPrimitive.material.textureMap.isUsed = true;
     skyboxPrimitive.material.textureMap.filename = "scenefiles/moretextures/stars.png";
 
@@ -104,9 +104,8 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     RenderShapeData skyboxShapeData = RenderShapeData{skyboxPrimitive, skyboxCTM};
     auto skyboxObject = std::make_shared<RealtimeObject>(skyboxShapeData, newScene);
     newScene->m_objects.push_back(skyboxObject);
+    // newScene->m_skyboxObject = skyboxObject;
     //Add texture for skybox
-
-
     return newScene;
 }
 
@@ -143,6 +142,7 @@ void RealtimeScene::paintObjects() {
         std::cerr << "Failed to paint objects: shader not initialized" << std::endl;
         return;
     }
+
     glUseProgram(*m_phongShader);
     passUniformMat4("view", m_camera->viewMatrix());
     passUniformMat4("proj", m_camera->projectionMatrix());
@@ -154,18 +154,6 @@ void RealtimeScene::paintObjects() {
     passUniformFloat("ks", m_globalData.ks);
     // set texture slot
     glActiveTexture(GL_TEXTURE0);
-
-    //First paint skybox
-    //
-    if (m_skyboxObject) {
-        // Render the skybox object
-        passUniformMat4("model", m_skyboxObject->CTM());  // Pass the skybox model matrix
-        passUniformMat3("inverseTransposeModel", m_skyboxObject->inverseTransposeCTM());
-
-        glBindVertexArray(m_skyboxObject->mesh()->vao());
-        glDrawArrays(GL_TRIANGLES, 0, (GLsizei)(m_skyboxObject->mesh()->vertexData().size() / 3));
-        glBindVertexArray(0);
-    }
     for (const auto& object : m_objects) {
         if (!object->shouldRender()) {
             continue;
@@ -191,6 +179,13 @@ void RealtimeScene::paintObjects() {
         passUniformVec3("cSpecular", material.cSpecular.xyz());
         passUniformFloat("shininess", material.shininess);
         glBindVertexArray(object->mesh()->vao());
+        if (object->type() == PrimitiveType::PRIMITIVE_SKYBOX)
+        {
+            passUniformInt("isSkybox", 1);
+        } else
+        {
+            passUniformInt("isSkybox", 0);
+        }
         glDrawArrays(GL_TRIANGLES, 0, (GLsizei) (object->mesh()->vertexData().size() / 3));
         glBindVertexArray(0);
         if (object->usesTexture()) {
@@ -266,8 +261,8 @@ void RealtimeScene::updateSettings(float nearPlane, float farPlane) {
     }
 }
 
-void RealtimeScene::initShader(GLuint shader) {
-    m_phongShader = shader;
+void RealtimeScene::initShader(GLuint phongShader) {
+    m_phongShader = phongShader;
 }
 
 bool RealtimeScene::shaderInitialized() const {
