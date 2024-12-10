@@ -12,12 +12,27 @@
 #include "objects/realtimeobject.h"
 #include "objects/collisionobject.h"
 #include "objects/playerobject.h"
+
+#include <unordered_set>
+
+
+struct pair_hash {
+    template <typename T1, typename T2>
+    std::size_t operator()(const std::pair<T1, T2>& pair) const {
+        std::size_t h1 = std::hash<T1>{}(pair.first);
+        std::size_t h2 = std::hash<T2>{}(pair.second);
+        return h1 ^ (h2 << 1); // Combine hashes using XOR and bit shifting
+    }
+};
+
 #include "objects/enemyobject.h"
+
 
 /// Analogous to RayTraceScene from project 3/4; represents a scene to be rendered in real-time
 /// An instance of this class is created each time the scene is changed in the GUI
 class RealtimeScene : public std::enable_shared_from_this<RealtimeScene> {
 public:
+
     /// Initializes the scene with the given parameters; returns an empty shared_ptr if the scene file could not be parsed
     /// or if there are too many lights
     /// Note: the `meshes` map is copied to avoid reference issues; the meshes themselves are not copied
@@ -27,6 +42,7 @@ public:
 
     /// Paints every object in the scene; to be called in paintGL
     void paintObjects();
+    void generateProceduralCity(int gridX, int gridZ, int rows, int cols, float spacing) ;
 
     /// Convenience method for constructing and adding a new object to the scene
     /// Returns a shared_ptr to the object.
@@ -62,32 +78,49 @@ public:
 
     // Returns the collision objects list of the scene
     const std::vector<std::weak_ptr<CollisionObject>>& collisionObjects() const;
+    std::unordered_set<std::pair<int, int>, pair_hash> existingBuildings;
+    void removeGridObjects(int gridX, int gridZ, int rows, int cols);
 
     // input events methods; currently called manually by realtime (ideally we'd have some callback system or something for this)
+    float m_nearPlane;
+    float m_farPlane;
+    static std::unordered_set<std::pair<int, int>, pair_hash> m_activeGrids;
+    //std::vector<pair<int,int>> m_usedGrid;
+
+
+    RenderData m_renderData;
     void keyPressEvent(int key);
     void keyReleaseEvent(int key);
     void mousePressEvent(int button);
     void mouseReleaseEvent(int button);
     void mouseMoveEvent(double xpos, double ypos);
 
-    void finish();
-private:
-    RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
-                  std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
-
-    float m_nearPlane;
-    float m_farPlane;
-
-    int m_width;
-    int m_height;
-    SceneGlobalData m_globalData;
-    std::shared_ptr<Camera> m_camera;
+    std::shared_ptr <RealtimeObject> addBuilding(const glm::vec3& position);
+    void updateDynamicCity(const glm::vec3& playerPosition, float updateRadius);
+    //std::shared_ptr<RealtimeScene> generateProceduralCity(int cityWidth, int cityDepth, int blockSize);
     // TODO there might be a smarter way to store these... maybe a map from id to object?
     //      I feel like we also need some sort of callback system to register objects that want to listen for input, etc
     std::vector<std::shared_ptr<RealtimeObject>> m_objects;
     // if we want to pass this to the objects themselves, we need weak_ptrs to avoid circular reference issues
     std::vector<std::weak_ptr<CollisionObject>> m_collisionObjects;
     std::shared_ptr<PlayerObject> m_playerObject;
+    //std::pair<int, int> gridCoord;
+
+
+    void finish();
+
+private:
+    RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
+                  std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
+
+    //float m_nearPlane;
+    //float m_farPlane;
+
+    int m_width;
+    int m_height;
+    SceneGlobalData m_globalData;
+    std::shared_ptr<Camera> m_camera;
+
 
     std::vector<SceneLightData> m_lights;
     // need this to not be a reference to avoid C++ issues; so there's just two copies of this map at all times, oh welllll

@@ -11,8 +11,10 @@ class CollisionObject;
 struct CollisionInfo {
     /// The vector that should be added to the object's translation (after the given targetTranslation) to correct the collision
     glm::vec3 collisionCorrectionVec;
+
     /// The objects that were collided with
     std::set<std::shared_ptr<CollisionObject>> objects;
+
 };
 
 /// "Abstract" class representing an object that is collidable

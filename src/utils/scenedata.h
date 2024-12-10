@@ -149,6 +149,8 @@ struct ScenePrimitive {
     PrimitiveType type;
     SceneMaterial material;
     std::string meshfile; // Used for triangle meshes
+    //ScenePrimitive(PrimitiveType t, const SceneMaterial& m) : type(t), material(m) {}
+
 };
 
 // Struct which contains data for a transformation.

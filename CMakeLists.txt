@@ -85,8 +85,10 @@ add_executable(${PROJECT_NAME}
         src/utils/imagereader.h
         src/utils/rgba.h
         src/utils/stb_image.h
-        src/meshes/skycubemesh.cpp
-        src/meshes/skycubemesh.h
+        src/meshes/skymesh.cpp
+        src/meshes/skymesh.h
+        src/objects/skyboxobject.h
+        src/objects/skyboxobject.cpp
 
 
 )

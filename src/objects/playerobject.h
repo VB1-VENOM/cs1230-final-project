@@ -29,6 +29,34 @@ public:
     void mousePressEvent(int button);
     void mouseReleaseEvent(int button);
     void mouseMoveEvent(double xpos, double ypos);
+    // glm::vec2 m_cityStart = glm::vec2(0, 0); // Starting corner of the city grid
+    // glm::vec2 m_cityEnd = glm::vec2(10, 10); // Current end of the city grid (10x10 grid)
+    // float m_citySpacing = 5.0f; // Spacing between buildings (same as used in generateProceduralCity)
+    // int m_cityRows = 10; // Number of rows in each grid section
+    // int m_cityCols = 10; // Number of columns in each grid section
+    std::vector<std::shared_ptr<RealtimeObject>> m_cityObjects; // Track city objects
+    void expandCity(const glm::vec2& direction);
+    void expandCityWithProceduralGeneration(const glm::vec2& direction);
+    void removeOutOfBoundsObjects();
+    void removeCityEdge(const glm::vec2& direction);
+    glm::vec2 m_cityStart = glm::vec2(0, 0); // Grid start (bottom-left corner)
+    glm::vec2 m_cityEnd = glm::vec2(10, 10); // Grid end (top-right corner)
+    float m_citySpacing = 5.0f; // Spacing between buildings
+    int m_cityRows = 10; // Number of rows in the grid
+    int m_cityCols = 10; // Number of columns in the grid
+    struct Vec2Comparator {
+        bool operator()(const glm::vec2& lhs, const glm::vec2& rhs) const {
+            if (lhs.x != rhs.x) {
+                return lhs.x < rhs.x;
+            }
+            return lhs.y < rhs.y;
+        }
+    };
+
+    std::map<glm::vec2, std::shared_ptr<RealtimeObject>, Vec2Comparator> m_cityGrid;
+     // Map of grid positions to objects
+
+
 private:
     // we could avoid storing a new keymap/etc for each object, but i found this the simplest way of designing things
     std::unordered_map<int, bool> m_keyMap;
@@ -43,5 +71,7 @@ private:
     // java-like super
     typedef CollisionObject super;
 
+
     void spawnBullet();
 };
+
