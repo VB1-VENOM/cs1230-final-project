@@ -256,7 +256,6 @@ void Realtime::paintGL() {
     else {
         distortion_factor = std::chrono::duration_cast<std::chrono::milliseconds>(m_damage_end_time - std::chrono::steady_clock::now()).count();
         distortion_factor /= ON_DAMAGE_SCREEN_RED_MS;
-        std::cout << distortion_factor << std::endl;
     }
 
     paintScreenTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter, m_damage_filter, distortion_factor);
