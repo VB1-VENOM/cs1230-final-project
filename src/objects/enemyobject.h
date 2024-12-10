@@ -5,7 +5,7 @@
 #include "camera.h"
 
 // TODO play with defaults
-#define DEFAULT_ENEMY_GRAVITY 10.f
+#define DEFAULT_ENEMY_GRAVITY 15.f
 #define ENEMY_SPEED 2.f
 #define EPSILON 0.0001f
 

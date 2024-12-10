@@ -1,5 +1,6 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "modernize-use-auto"
+
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -9,15 +10,15 @@
 #include "realtimescene.h"
 #include "projectileobject.h"
 #include <glm/gtx/string_cast.hpp>
-
+#include <utility>
 
 
 EnemyObject::EnemyObject(const RenderShapeData& data,
-                           const std::shared_ptr<RealtimeScene>& scene,
-                           std::shared_ptr<Camera> camera)
+                         const std::shared_ptr<RealtimeScene>& scene,
+                         std::shared_ptr<Camera> camera)
         : CollisionObject(data, scene) {
     // enemy should render by default
-    m_camera = camera;
+    m_camera = std::move(camera);
     setShouldRender(true);
 }
 
@@ -26,15 +27,17 @@ void EnemyObject::translate(const glm::vec3& translation) {
 }
 
 void EnemyObject::tick(double elapsedSeconds) {
-  //determine where the player is relative to the enemy.
-  //does not take into account the y component.
-  glm::vec3 direction_to_player = glm::normalize(glm::vec3(m_camera->pos().x,0.f,m_camera->pos().z)
-                                                 - glm::vec3(pos().x, 0.f, pos().z));
+    //determine where the player is relative to the enemy.
+    //does not take into account the y component.
+    glm::vec3 direction_to_player = glm::normalize(glm::vec3(m_camera->pos().x, 0.f, m_camera->pos().z)
+                                                   - glm::vec3(pos().x, 0.f, pos().z));
 
-  m_velocity = direction_to_player * ENEMY_SPEED;
+    glm::vec3 enemy2DVelocity = direction_to_player * ENEMY_SPEED;
+    m_velocity.x = enemy2DVelocity.x;
+    m_velocity.z = enemy2DVelocity.z;
 
 
-    //// Basic physics/collision; COPIED FROM playerobject.cpp!!!
+    // Basic physics/collision; COPIED FROM playerobject.cpp!!!
 
     super::tick(elapsedSeconds);
 
@@ -55,7 +58,8 @@ void EnemyObject::tick(double elapsedSeconds) {
     // TODO fix duplicate collisions upon landing on the ground
     if (collisionInfoOpt.has_value()) {
         glm::vec3 collisionMovementDir = collisionInfoOpt->collisionCorrectionVec;
-        glm::vec3 projOfVelOnCollisionMovementDir = m_velocity * (glm::dot(glm::normalize(m_velocity), collisionMovementDir));
+        glm::vec3 projOfVelOnCollisionMovementDir =
+                m_velocity * (glm::dot(glm::normalize(m_velocity), collisionMovementDir));
         m_velocity += projOfVelOnCollisionMovementDir;
         if (collisionMovementDir.y > 0.f) {
             m_onGround = true;
