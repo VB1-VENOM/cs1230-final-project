@@ -546,6 +546,12 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
             material.cAmbient = SceneColor(0.1f, 0.1f, 0.1f, 1.0f);
             material.cSpecular = SceneColor(0.5f, 0.5f, 0.5f, 1.0f);
             material.shininess = 10.0f;
+            material.textureMap.isUsed = true;
+            material.textureMap.filename = "scenefiles/moretextures/city.jpg";
+
+            material.blend = 0.5f;  // Adjust blend factor as needed
+            material.textureMap.repeatU = 1.0f;  // Set U repeat value
+            material.textureMap.repeatV = 1.0f;  // Set V repeat value
 
             // Add building to the scene
             addObject(PrimitiveType::PRIMITIVE_CUBE, transform, material, RealtimeObjectType::STATIC);
