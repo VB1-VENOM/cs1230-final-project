@@ -11,9 +11,11 @@
 
 class EnemyObject : public CollisionObject {
 public:
-    EnemyObject(const RenderShapeData& data, const std::shared_ptr<RealtimeScene>& scene,
+    EnemyObject(RenderShapeData& data, const std::shared_ptr<RealtimeScene>& scene,
                  std::shared_ptr<Camera> camera);
+    void changeMaterial(const SceneMaterial& newMaterial);
     void tick(double elapsedSeconds) override;
+    void onShot();
     /// Moves the enemy
     void translate(const glm::vec3& translation) override;
 
@@ -24,6 +26,7 @@ private:
     float m_gravity = DEFAULT_ENEMY_GRAVITY;
     glm::vec3 m_velocity = glm::vec3(0.f);
     bool m_onGround = false;
+    RenderShapeData& m_renderShapeData;
 
     // java-like super
     typedef CollisionObject super;

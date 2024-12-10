@@ -11,16 +11,23 @@
 #include "projectileobject.h"
 #include <glm/gtx/string_cast.hpp>
 #include <utility>
+#include "material_constants/enemy_materials.h"
 
 
-EnemyObject::EnemyObject(const RenderShapeData& data,
+EnemyObject::EnemyObject(RenderShapeData& data,
                          const std::shared_ptr<RealtimeScene>& scene,
                          std::shared_ptr<Camera> camera)
-        : CollisionObject(data, scene) {
+    : CollisionObject(data, scene), m_renderShapeData(data)
+{
     // enemy should render by default
     m_camera = std::move(camera);
     setShouldRender(true);
 }
+
+void EnemyObject::changeMaterial(const SceneMaterial& newMaterial) {
+    m_renderShapeData.primitive.material = newMaterial;
+}
+
 
 void EnemyObject::translate(const glm::vec3& translation) {
     super::translate(translation);
@@ -67,13 +74,13 @@ void EnemyObject::tick(double elapsedSeconds) {
         translation += collisionInfoOpt->collisionCorrectionVec;
 
         //has the enemy been shot?
-        for (const std::shared_ptr<CollisionObject>& obj : collisionInfoOpt->objects) {
-            if (dynamic_pointer_cast<ProjectileObject>(obj)) {
-                std::cout << "shot " << std::endl;
-                queueFree(); //delete self
-                break;
-            }
-        }
+        // for (const std::shared_ptr<CollisionObject>& obj : collisionInfoOpt->objects) {
+        //     if (dynamic_pointer_cast<ProjectileObject>(obj)) {
+        //         std::cout << "shot " << std::endl;
+        //         queueFree(); //delete self
+        //         break;
+        //     }
+        // }
     }
     // reset onGround if we are not on the ground
     if (m_onGround && !getCollisionInfo(glm::vec3(0.f, -EPSILON, 0.f)).has_value()) {
@@ -83,6 +90,16 @@ void EnemyObject::tick(double elapsedSeconds) {
 
 
     translate(translation);
+}
+
+void EnemyObject::onShot() {
+
+    // m_renderShapeData = RenderShapeData();
+    changeMaterial(enemy_materials::damagedEnemyMaterial);
+
+
+    // queueFree();
+
 }
 
 #pragma clang diagnostic pop

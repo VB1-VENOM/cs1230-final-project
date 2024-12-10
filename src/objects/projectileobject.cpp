@@ -6,6 +6,7 @@
 
 #include "realtimescene.h"
 #include "ncprojectileobject.h"
+#include "enemyobject.h"
 
 ProjectileObject::ProjectileObject(const RenderShapeData& data,
                                    const std::shared_ptr<RealtimeScene>& scene,
@@ -41,6 +42,12 @@ void ProjectileObject::tick(double elapsedSeconds) {
 
     if (collisionInfo.has_value()) {
         // On collision, destroy the projectile
+        for (const std::shared_ptr<CollisionObject>& obj : collisionInfo->objects) {
+            if (std::shared_ptr<EnemyObject> enemy = std::dynamic_pointer_cast<EnemyObject>(obj)) {
+                enemy->onShot();
+            }
+        }
+
         collisionSphereEffect();
 
         queueFree();
