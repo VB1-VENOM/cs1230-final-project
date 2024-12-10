@@ -1,159 +1,119 @@
 #include "skycubemesh.h"
-#include "primitivemesh.h"
-#include <optional>
+
+#include <glm/ext/scalar_constants.hpp>
 
 SkyCubeMesh::SkyCubeMesh(int param1, int param2) : PrimitiveMesh(param1, param2) {}
 
-AABB SkyCubeMesh::computeAABB(const glm::mat4& ctm) const {
-    std::optional<glm::vec3> min = std::nullopt;
-    std::optional<glm::vec3> max = std::nullopt;
-    for (float x : {-0.5f, 0.5f}) {
-        for (float y : {-0.5f, 0.5f}) {
-            for (float z : {-0.5f, 0.5f}) {
-                glm::vec3 transformed = glm::vec3(ctm * glm::vec4(x, y, z, 1));
-                if (!min) {
-                    min = transformed;
-                }
-                if (!max) {
-                    max = transformed;
-                }
-                if (transformed.x < min->x) {
-                    min->x = transformed.x;
-                }
-                if (transformed.y < min->y) {
-                    min->y = transformed.y;
-                }
-                if (transformed.z < min->z) {
-                    min->z = transformed.z;
-                }
-                if (transformed.x > max->x) {
-                    max->x = transformed.x;
-                }
-                if (transformed.y > max->y) {
-                    max->y = transformed.y;
-                }
-                if (transformed.z > max->z) {
-                    max->z = transformed.z;
-                }
-            }
-        }
-    }
-    return {min.value(), max.value()};
-}
-
-int SkyCubeMesh::getMinParam1() const {
-    return 1;
-}
-
-int SkyCubeMesh::getMinParam2() const {
-    return 1;
-}
-
-int SkyCubeMesh::getExpectedVectorSize() {
-    return (param1() * param1()) // number of squares per side
-           * 6 // number of sides
-           * 2 // number of triangles per square
-           * 3 // number of vertices per triangle
-           * FLOATS_PER_VERTEX; // number of floats per vertex
-}
-
 void SkyCubeMesh::generateVertexData() {
-    // pos z face
-    makeFace(glm::vec3(-0.5f,  0.5f, 0.5f),
-             glm::vec3( 0.5f,  0.5f, 0.5f),
-             glm::vec3(-0.5f, -0.5f, 0.5f),
-             SkyCubeFaceType::POS_Z);
-
-    // neg z face
-    makeFace(glm::vec3(-0.5f, -0.5f, -0.5f),
-             glm::vec3( 0.5f, -0.5f, -0.5f),
-             glm::vec3(-0.5f,  0.5f, -0.5f),
-             SkyCubeFaceType::NEG_Z);
-
-    // pos x face
-    makeFace(glm::vec3(0.5f, -0.5f,  0.5f),
-             glm::vec3(0.5f,  0.5f,  0.5f),
-             glm::vec3(0.5f, -0.5f, -0.5f),
-             SkyCubeFaceType::POS_X);
-
-    // neg x face
-    makeFace(glm::vec3(-0.5f,  0.5f,  0.5f),
-             glm::vec3(-0.5f, -0.5f,  0.5f),
-             glm::vec3(-0.5f,  0.5f, -0.5f),
-             SkyCubeFaceType::NEG_X);
-
-    // pos y face
-    makeFace(glm::vec3(-0.5f, 0.5f, -0.5f),
-             glm::vec3( 0.5f, 0.5f, -0.5f),
-             glm::vec3(-0.5f, 0.5f, 0.5f),
-             SkyCubeFaceType::POS_Y);
-
-    // neg y face
-    makeFace(glm::vec3(-0.5f, -0.5f, 0.5f),
-             glm::vec3( 0.5f, -0.5f, 0.5f),
-             glm::vec3(-0.5f, -0.5f, -0.5f),
-             SkyCubeFaceType::NEG_Y);
+    float thetaStep = glm::radians(360.f / (float) param2());
+    float currentTheta = 0 * thetaStep;
+    float nextTheta = 1 * thetaStep;
+    for (int i = 0; i < param2(); i++) {
+        // why did i have to swap currentTheta and nextTheta? that doesn't make sense...
+        //    edit: looks like theta is moving clockwise??? for some reason???
+        makeWedge(nextTheta, currentTheta);
+        currentTheta += thetaStep;
+        nextTheta += thetaStep;
+    }
 }
 
+void SkyCubeMesh::makeTopTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight, float leftTheta, float rightTheta) {
+    pushVertex(center, glm::normalize(center), getUV(center, (leftTheta + rightTheta) / 2));
+    pushVertex(bottomRight, glm::normalize(bottomRight), getUV(bottomRight, rightTheta));
+    pushVertex(bottomLeft, glm::normalize(bottomLeft), getUV(bottomLeft, leftTheta));
+}
 
-void SkyCubeMesh::makeFace(glm::vec3 topLeft,
-                        glm::vec3 topRight,
-                        glm::vec3 bottomLeft,
-                        SkyCubeFaceType face) {
-    float totalWidth = glm::length(topRight - topLeft);
-    float tileWidth = totalWidth / (float) param1();
-    float totalHeight = glm::length(bottomLeft - topLeft);
-    float tileHeight = totalHeight / (float) param1();
-    glm::vec3 rightVec = glm::normalize(topRight - topLeft);
-    glm::vec3 downVec = glm::normalize(bottomLeft - topLeft);
-    for (int i = 0; i < param1(); i++) {
-        for (int j = 0; j < param1(); j++) {
-            glm::vec3 tileTopLeft = topLeft + (float) i * tileWidth * rightVec + (float) j * tileHeight * downVec;
-            makeTile(
-                    tileTopLeft,
-                    tileTopLeft + tileWidth * rightVec,
-                    tileTopLeft + tileHeight * downVec,
-                    tileTopLeft + tileWidth * rightVec + tileHeight * downVec,
-                    face
-            );
-        }
-    }
+void SkyCubeMesh::makeBottomTipTile(glm::vec3 center, glm::vec3 topLeft, glm::vec3 topRight, float leftTheta, float rightTheta) {
+    pushVertex(center, glm::normalize(center), getUV(center, (leftTheta + rightTheta) / 2));
+    pushVertex(topLeft, glm::normalize(topLeft), getUV(topLeft, leftTheta));
+    pushVertex(topRight, glm::normalize(topRight), getUV(topRight, rightTheta));
 }
 
 void SkyCubeMesh::makeTile(glm::vec3 topLeft,
-                            glm::vec3 topRight,
-                            glm::vec3 bottomLeft,
-                            glm::vec3 bottomRight,
-                            SkyCubeFaceType face) {
-    // The normal is calculated the same way, but you reverse the winding order of the vertices.
-    glm::vec3 n = glm::normalize(glm::cross(bottomLeft - topLeft, bottomRight - topLeft));
+                          glm::vec3 topRight,
+                          glm::vec3 bottomLeft,
+                          glm::vec3 bottomRight,
+                          float leftTheta,
+                          float rightTheta) {
+    pushVertex(topLeft, glm::normalize(topLeft), getUV(topLeft, leftTheta)); // sphere normal is just direction from origin
+    pushVertex(topRight, glm::normalize(topRight), getUV(topRight, rightTheta));
+    pushVertex(bottomRight, glm::normalize(bottomRight), getUV(bottomRight, rightTheta));
 
-    // Reverse the winding order by changing the vertex order:
-    pushVertex(topLeft, n, getUV(topLeft, face));         // Top-left
-    pushVertex(topRight, n, getUV(topRight, face));       // Top-right
-    pushVertex(bottomRight, n, getUV(bottomRight, face)); // Bottom-right
-
-    pushVertex(topLeft, n, getUV(topLeft, face));         // Top-left
-    pushVertex(bottomRight, n, getUV(bottomRight, face)); // Bottom-right
-    pushVertex(bottomLeft, n, getUV(bottomLeft, face));   // Bottom-left
+    pushVertex(topLeft, glm::normalize(topLeft), getUV(topLeft, leftTheta));
+    pushVertex(bottomRight, glm::normalize(bottomRight), getUV(bottomRight, rightTheta));
+    pushVertex(bottomLeft, glm::normalize(bottomLeft), getUV(bottomLeft, leftTheta));
 }
 
-
-glm::vec2 SkyCubeMesh::getUV(glm::vec3 pos, SkyCubeFaceType face) {
-    switch (face) {
-        case SkyCubeFaceType::POS_X:
-            return {-pos.z + 0.5f, pos.y + 0.5f};
-        case SkyCubeFaceType::NEG_X:
-            return {pos.z + 0.5f, pos.y + 0.5f};
-        case SkyCubeFaceType::POS_Y:
-            return {pos.x + 0.5f, -pos.z + 0.5f};
-        case SkyCubeFaceType::NEG_Y:
-            return {pos.x + 0.5f, pos.z + 0.5f};
-        case SkyCubeFaceType::POS_Z:
-            return {pos.x + 0.5f, pos.y + 0.5f};
-        case SkyCubeFaceType::NEG_Z:
-            return {-pos.x + 0.5f, pos.y + 0.5f};
-        default:
-            throw std::runtime_error("Invalid cube intersection type");
+void SkyCubeMesh::makeWedge(float currentTheta, float nextTheta) {
+    float phiStep = glm::radians(180.f / (float) param1());
+    float currentPhi = 0 * phiStep;
+    float nextPhi = 1 * phiStep;
+    float r = 0.5;
+    // x = r * sin(phi) * cos(theta)
+    // y = r * cos(phi)
+    // z = r * sin(phi) * sin(theta)
+    for (int i = 0; i < param1(); i++) {
+        glm::vec3 topLeft = glm::vec3(
+                r * glm::sin(currentPhi) * glm::cos(currentTheta),
+                r * glm::cos(currentPhi),
+                r * glm::sin(currentPhi) * glm::sin(currentTheta)
+        );
+        glm::vec3 topRight = glm::vec3(
+                r * glm::sin(currentPhi) * glm::cos(nextTheta),
+                r * glm::cos(currentPhi),
+                r * glm::sin(currentPhi) * glm::sin(nextTheta)
+        );
+        glm::vec3 bottomLeft = glm::vec3(
+                r * glm::sin(nextPhi) * glm::cos(currentTheta),
+                r * glm::cos(nextPhi),
+                r * glm::sin(nextPhi) * glm::sin(currentTheta)
+        );
+        glm::vec3 bottomRight = glm::vec3(
+                r * glm::sin(nextPhi) * glm::cos(nextTheta),
+                r * glm::cos(nextPhi),
+                r * glm::sin(nextPhi) * glm::sin(nextTheta)
+        );
+        if (i == 0) {
+            glm::vec3 center = glm::vec3(0, 0.5, 0);
+            makeTopTipTile(center, bottomLeft, bottomRight, currentTheta, nextTheta);
+        } else if (i == param1() - 1) {
+            glm::vec3 center = glm::vec3(0, -0.5, 0);
+            makeBottomTipTile(center, topLeft, topRight, currentTheta, nextTheta);
+        } else {
+            makeTile(topLeft, topRight, bottomLeft, bottomRight, currentTheta, nextTheta);
+        }
+        currentPhi += phiStep;
+        nextPhi += phiStep;
     }
+}
+
+int SkyCubeMesh::getMinParam1() const {
+    return 2;
+}
+
+int SkyCubeMesh::getMinParam2() const {
+    return 3;
+}
+
+int SkyCubeMesh::getExpectedVectorSize() {
+    return param2() // number of wedges
+           * std::max(param1() - 2, 0) // number of full tiles per wedge
+           * 2 // number of triangles per tile
+           * 3 // number of vertices per triangle
+           * FLOATS_PER_VERTEX // number of floats per vertex
+           + param2() // number of wedges
+             * 2 // number of caps
+             * 3 // number of vertices per triangle
+             * FLOATS_PER_VERTEX; // number of floats per vertex
+}
+
+glm::vec2 SkyCubeMesh::getUV(glm::vec3 pos, float theta) {
+    // from lecture: phi = asin(y/r) = asin(2y) => phi in range [-pi/2, pi/2]
+    // v = phi/2 + 1/2
+    float asin = std::asin(2.f * pos.y);
+    float v = asin /  glm::pi<float>() + 0.5f;
+    // for some reason we need a 1 - theta / (2 * M_PIf) here instead of theta / (2 * M_PIf)???  idk why
+    float u = 1 - theta / (2 *  glm::pi<float>());
+
+    return {u, v};
 }
