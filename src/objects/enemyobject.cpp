@@ -48,7 +48,7 @@ void EnemyObject::tick(double elapsedSeconds) {
     if (!m_onGround) {
         m_velocity.y -= m_gravity * deltaTime;
     }
-    std::cout << glm::to_string(m_velocity) << std::endl;
+    // std::cout << glm::to_string(m_velocity) << std::endl;
 
     glm::vec3 translation = m_velocity * deltaTime;
     auto collisionInfoOpt = getCollisionInfo(translation);
@@ -65,11 +65,22 @@ void EnemyObject::tick(double elapsedSeconds) {
             m_onGround = true;
         }
         translation += collisionInfoOpt->collisionCorrectionVec;
+
+        //has the enemy been shot?
+        for (const std::shared_ptr<CollisionObject>& obj : collisionInfoOpt->objects) {
+            if (dynamic_pointer_cast<ProjectileObject>(obj)) {
+                std::cout << "shot " << std::endl;
+                queueFree(); //delete self
+                break;
+            }
+        }
     }
     // reset onGround if we are not on the ground
     if (m_onGround && !getCollisionInfo(glm::vec3(0.f, -EPSILON, 0.f)).has_value()) {
         m_onGround = false;
     }
+
+
 
     translate(translation);
 }
