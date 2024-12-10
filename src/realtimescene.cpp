@@ -104,6 +104,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 
     auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, cameraData, std::move(meshes)));
     newScene->m_taken_damage = taken_damage;
+    newScene->m_enemy_spawn_start = std::chrono::steady_clock::now() + std::chrono::milliseconds(GRACE_PERIOD_MS);
     // All initialization must be done here since a shared_ptr to this scene is required.
 
     // Add static collidable objects from the parsed scene.
@@ -149,16 +150,6 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     RealtimeScene::m_activeGrids.insert({0, 0});
 
     //create enemies
-    std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,15 ,1.5)};
-    auto enemyList = newScene->createEnemies(enemyPositions,newScene);
-    for (auto enemy : enemyList)
-    {
-        auto enemyCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(enemy));
-        auto enemyRealtimeObject = std::static_pointer_cast<RealtimeObject>(enemy);
-
-        newScene->m_collisionObjects.push_back(enemyCollisionObject);
-        newScene->m_objects.push_back(enemyRealtimeObject);
-    }
 
     newScene->m_lights.reserve(MAX_LIGHTS);
     for (const auto& light : renderData.lights) {
@@ -182,25 +173,11 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     auto skyboxObjectRealtime = std::static_pointer_cast<RealtimeObject>(skyboxObject);
     newScene->m_objects.push_back(skyboxObjectRealtime);
     //Add texture for skybox
+
+    //start the grace period counter
     return newScene;
 }
 
-std::vector<std::shared_ptr<EnemyObject>> RealtimeScene::createEnemies(std::vector<glm::vec3> enemy_positions,
-    std::shared_ptr<RealtimeScene> scene)
-{
-    std::vector<std::shared_ptr<EnemyObject>> enemies;
-    for(glm::vec3 position : enemy_positions)
-    {
-        ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
-        // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
-        glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
-        RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
-
-        enemies.push_back(std::make_shared<EnemyObject>(enemyShapeData, scene, m_camera, m_taken_damage));
-
-    }
-    return enemies;
-}
 
 
 
@@ -251,8 +228,6 @@ void RealtimeScene::tick(double elapsedSeconds) {
     // Add elapsed time to the accumulator
 
     updateDynamicCity(m_camera->pos(), 100.0f);
-
-
 
 
 }
@@ -445,6 +420,18 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, con
     throw std::runtime_error("Invalid object type");
 }
 
+void RealtimeScene::addEnemy(glm::vec3 position) {
+    ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
+    // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
+    glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
+    RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
+
+    auto enemy = new EnemyObject(enemyShapeData, shared_from_this(), m_camera, m_taken_damage);
+
+    auto enemy_obj = static_cast<RealtimeObject*>(enemy);
+    addObject(std::unique_ptr<RealtimeObject>(enemy_obj));
+}
+
 std::shared_ptr<RealtimeObject> RealtimeScene::addObject(std::unique_ptr<RealtimeObject> object) {
     std::shared_ptr<RealtimeObject> objectShared = std::move(object);
     if (!objectShared) {
@@ -484,6 +471,16 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
     float baseX = gridX * cols * spacing;
     float baseZ = gridZ * rows * spacing;
 
+    //find location to spawn enemy
+    if (std::chrono::steady_clock::now() > m_enemy_spawn_start)
+    {
+        std::cout << "Current time: " << std::chrono::steady_clock::now().time_since_epoch().count()
+          << ", Spawn time: " << m_enemy_spawn_start.time_since_epoch().count() << std::endl;
+
+        std::cout << "spawn enemy" << std::endl;
+        addEnemy(glm::vec3(baseX, 0.0f, baseZ));
+    }
+
     // Create the floor for the grid
     float floorWidth = cols * spacing; // Width spans the entire grid
     float floorDepth = rows * spacing; // Depth spans the entire grid
@@ -494,6 +491,8 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
         -floorHeight / 2.0f - 3,                    // Position floor at ground level
         baseZ + floorDepth / 2.0f - spacing / 2.0f  // Center the floor in the Z-axis
         );
+
+
 
     glm::mat4 floorTransform = glm::translate(glm::mat4(1.0f), floorPosition) *
                                glm::scale(glm::mat4(1.0f), glm::vec3(floorWidth, floorHeight, floorDepth));
@@ -545,6 +544,7 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
 
             // Mark the grid coordinate as having a building
             existingBuildings.insert(gridCoord);
+
         }
     }
 }
