@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-
+using namespace std;
 struct Settings {
     std::string sceneFilePath;
     int shapeParameter1 = 1;

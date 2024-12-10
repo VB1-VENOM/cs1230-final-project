@@ -49,6 +49,7 @@ public:
 
     std::shared_ptr<RealtimeScene> scene() const;
 
+
     /** Returns whether this object uses a texture; that is, if its material's textureMap has isUsed set,
      * and if the texture file path was successfully loaded as an image.
      * @return true if this object uses a texture, false otherwise
@@ -66,6 +67,7 @@ public:
 
 
     void finish();
+
 private:
     std::weak_ptr<RealtimeScene> m_scene;
     bool m_shouldRender;

@@ -62,8 +62,10 @@ std::optional<CollisionInfo> CollisionObject::getCollisionInfo(const glm::vec3& 
                 collisionThisPass = true;
             }
         }
+
         if (!collisionThisPass) {
             break;
+
         }
     }
     if (collidedObjects.empty()) {
@@ -78,6 +80,7 @@ const AABB& CollisionObject::aabb() const {
     return m_aabb;
 }
 
+
 void CollisionObject::setCollisionFilter(std::function<bool(std::shared_ptr<CollisionObject>)> filter) {
     m_collisionFilter = std::move(filter);
 }
@@ -85,3 +88,4 @@ void CollisionObject::setCollisionFilter(std::function<bool(std::shared_ptr<Coll
 std::optional<std::function<bool(std::shared_ptr<CollisionObject>)>> CollisionObject::collisionFilter() const {
     return m_collisionFilter;
 }
+
