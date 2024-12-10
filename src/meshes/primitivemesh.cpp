@@ -8,7 +8,7 @@
 #include "spheremesh.h"
 #include "cylindermesh.h"
 #include "conemesh.h"
-#include "skycubemesh.h"
+#include "skymesh.h"
 
 std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>
 PrimitiveMesh::initMeshes(int param1, int param2) {
@@ -17,7 +17,7 @@ PrimitiveMesh::initMeshes(int param1, int param2) {
     meshes[PrimitiveType::PRIMITIVE_SPHERE] = std::make_shared<SphereMesh>(param1, param2);
     meshes[PrimitiveType::PRIMITIVE_CYLINDER] = std::make_shared<CylinderMesh>(param1, param2);
     meshes[PrimitiveType::PRIMITIVE_CONE] = std::make_shared<ConeMesh>(param1, param2);
-    meshes[PrimitiveType::PRIMITIVE_SKYBOX] = std::make_shared<SkyCubeMesh>(param1, param2);
+    meshes[PrimitiveType::PRIMITIVE_SKYBOX] = std::make_shared<SkyMesh>(param1, param2);
 
     return meshes;
 }
