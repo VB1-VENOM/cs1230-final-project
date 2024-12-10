@@ -6,6 +6,7 @@
 #include <iostream>
 #include "settings.h"
 #include "utils/shaderloader.h"
+#include "utils/helpers.h"
 
 // ================== Project 5: Lights, Camera
 
@@ -27,13 +28,13 @@ Realtime::Realtime(int w, int h)
 }
 
 void Realtime::tryInitScene() {
-    // we can't init until the user has selected a scene file and we've been told the dimensions by resizeGL
-    if (settings.sceneFilePath.empty() || !m_width.has_value() || !m_height.has_value()) {
+    // we can't init until the user has selected a scene file
+    if (settings.sceneFilePath.empty()) {
         return;
     }
 
-    m_scene = RealtimeScene::init(m_width.value(), m_height.value(), settings.sceneFilePath,
-                                  settings.nearPlane, settings.farPlane, m_meshes);
+    m_scene = RealtimeScene::init(m_width, m_height, settings.sceneFilePath,
+                                  settings.nearPlane, settings.farPlane, m_meshes, m_taken_damage);
 }
 
 bool Realtime::isInited() const {
@@ -49,7 +50,17 @@ void Realtime::finish() {
         mesh->deleteBuffers();
     }
 
-    glDeleteProgram(m_shader);
+    if (isInited()) {
+        m_scene->finish();
+    }
+
+    glDeleteProgram(m_filterShader);
+    glDeleteProgram(m_phongShader);
+    glDeleteVertexArrays(1, &m_fullscreen_vao);
+    glDeleteBuffers(1, &m_fullscreen_vbo);
+    glDeleteTextures(1, &m_fbo_texture);
+    glDeleteRenderbuffers(1, &m_fbo_renderbuffer);
+    glDeleteFramebuffers(1, &m_fbo);
 
     mainWindow.doneCurrent();
 }
@@ -59,6 +70,12 @@ void Realtime::initializeGL() {
 
     // m_timer = startTimer(1000/60);
     // m_elapsedTimer.start();
+    *m_taken_damage = false;
+
+    // FBO variables
+    m_defaultFBO = 0; // TODO
+    m_fbo_width = m_width;
+    m_fbo_height = m_height;
 
     // Initializing GL.
     // GLEW (GL Extension Wrangler) provides access to OpenGL functions.
@@ -84,17 +101,122 @@ void Realtime::initializeGL() {
     // enable vsync
     glfwSwapInterval(1);
 
-    m_shader = ShaderLoader::createShaderProgram("resources/shaders/default.vert", "resources/shaders/default.frag");
+    m_phongShader = ShaderLoader::createShaderProgram("resources/shaders/default.vert", "resources/shaders/default.frag");
+    m_filterShader = ShaderLoader::createShaderProgram("resources/shaders/filter.vert", "resources/shaders/filter.frag");
+    m_crosshairShader = ShaderLoader::createShaderProgram("resources/shaders/crosshair.vert", "resources/shaders/crosshair.frag");
+    // m_crosshairShader = ShaderLoader::createShaderProgram("resources/shaders/skybox.vert", "resources/shaders/skybox.frag");
+
+    // set uniform texture loc for the filter shader TODO is this needed?
+    glUseProgram(m_filterShader);
+    glUniform1i(glGetUniformLocation(m_filterShader, "myTexture"), 0);
+    glUseProgram(0);
+    // set uniform texture loc for object textures in phong shader TODO is this needed?
+    glUseProgram(m_phongShader);
+    glUniform1i(glGetUniformLocation(m_phongShader, "objTexture"), 0);
+    glUseProgram(0);
 
     for (auto& [_, mesh] : m_meshes) {
         // my updateBuffers() function makes sure the mesh is allocated before updating
         mesh->updateBuffers();
     }
+
+    initializeCrosshair();
+    initializeFullscreenQuad();
+    makeFBO();
+}
+
+void Realtime::initializeFullscreenQuad() {
+    std::vector<GLfloat> fullscreen_quad_data =
+            { //     POSITIONS    //
+                    -1.f, 1.f, 0.0f,
+                    0.f, 1.f,
+                    -1.f, -1.f, 0.0f,
+                    0.f, 0.f,
+                    1.f, -1.f, 0.0f,
+                    1.f, 0.f,
+                    1.f, 1.f, 0.0f,
+                    1.f, 1.f,
+                    -1.f, 1.f, 0.0f,
+                    0.f, 1.f,
+                    1.f, -1.f, 0.0f,
+                    1.f, 0.f
+            };
+
+    // Generate and bind a VBO and a VAO for a fullscreen quad
+    glGenBuffers(1, &m_fullscreen_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_fullscreen_vbo);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) (fullscreen_quad_data.size() * sizeof(GLfloat)), fullscreen_quad_data.data(),
+                 GL_STATIC_DRAW);
+    glGenVertexArrays(1, &m_fullscreen_vao);
+    glBindVertexArray(m_fullscreen_vao);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), nullptr);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+
+    // Unbind the fullscreen quad's VBO and VAO
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void Realtime::initializeCrosshair()
+{
+    // Define crosshair lines in NDC
+    std::vector<GLfloat> crosshair_data = {
+        // Horizontal line
+        -0.05f, 0.0f, 0.0f,  // Start of horizontal line
+         0.05f, 0.0f, 0.0f,  // End of horizontal line
+        // Vertical line
+         0.0f, -0.08f, 0.0f, // Start of vertical line
+         0.0f,  0.08f, 0.0f  // End of vertical line
+    };
+
+    // Generate and bind a VBO and a VAO for the crosshair
+    glGenBuffers(1, &m_crosshair_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_crosshair_vbo);
+    glBufferData(GL_ARRAY_BUFFER, crosshair_data.size() * sizeof(GLfloat), crosshair_data.data(), GL_STATIC_DRAW);
+
+    glGenVertexArrays(1, &m_crosshair_vao);
+    glBindVertexArray(m_crosshair_vao);
+
+    // Set vertex attributes
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), nullptr);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void Realtime::makeFBO() {
+    // Generate and bind an empty texture, set its min/mag filter interpolation, then unbind
+    glGenTextures(1, &m_fbo_texture);
+    glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_fbo_width, m_fbo_height, 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Generate and bind a renderbuffer of the right size, set its format, then unbind
+    glGenRenderbuffers(1, &m_fbo_renderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_fbo_renderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, m_fbo_width, m_fbo_height);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    // Generate and bind an FBO
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+
+    // Add our texture as a color attachment, and our renderbuffer as a depth+stencil attachment, to our FBO
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fbo_texture, 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_fbo_renderbuffer);
+
+    // Unbind the FBO
+    glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
 }
 
 void Realtime::paintGL() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     if (m_queuedBufferUpdate) {
         for (auto& [_, mesh] : m_meshes) {
             mesh->updateBuffers();
@@ -108,26 +230,102 @@ void Realtime::paintGL() {
     // we don't really know when exactly the scene is initialized, so just check if we've passed the shader to
     // the scene every frame--it's cheap
     if (!m_scene->shaderInitialized()) {
-        m_scene->initShader(m_shader);
+        m_scene->initShader(m_phongShader);
     }
 
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    glViewport(0, 0, m_fbo_width, m_fbo_height);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // paintObjects sets and resets the program
     m_scene->paintObjects();
+    //paintaCrosshair sets and resets the program
+    paintCrosshair();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_defaultFBO);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    if (*m_taken_damage == true) {
+        damageTaken();
+    }
+
+    float distortion_factor = 0.f;
+    if (std::chrono::steady_clock::now() > m_damage_end_time) {
+        m_damage_filter = false;
+    }
+    else {
+        distortion_factor = std::chrono::duration_cast<std::chrono::milliseconds>(m_damage_end_time - std::chrono::steady_clock::now()).count();
+        distortion_factor /= ON_DAMAGE_SCREEN_RED_MS;
+    }
+
+    paintScreenTexture(m_fbo_texture, settings.perPixelFilter, settings.kernelBasedFilter, m_damage_filter, distortion_factor);
+}
+
+void Realtime::paintScreenTexture(GLuint texture, bool enableInvert, bool enableBoxBlur, bool enableDamageFilter, float distortion_factor) const {
+    glUseProgram(m_filterShader);
+    helpers::passUniformInt(m_filterShader, "enableInvert", enableInvert);
+    helpers::passUniformInt(m_filterShader, "enableBoxBlur", enableBoxBlur);
+    helpers::passUniformInt(m_filterShader, "enableDamage", enableDamageFilter);
+    helpers::passUniformFloat(m_filterShader, "distortionFactor", distortion_factor);
+
+
+    // TODO is fbo_width/height correct? or should it be before device pixel ratio?
+    helpers::passUniformInt(m_filterShader, "screenWidth", m_fbo_width);
+    helpers::passUniformInt(m_filterShader, "screenHeight", m_fbo_height);
+
+    glBindVertexArray(m_fullscreen_vao);
+    // Bind "texture" to slot 0
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void Realtime::paintCrosshair()
+{
+    // Render the crosshair
+    glUseProgram(m_crosshairShader);
+    glBindVertexArray(m_crosshair_vao);
+
+    // Crosshair doesn't need a model, view, or projection matrix
+    glDrawArrays(GL_LINES, 0, 4);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+
 }
 
 
 
 void Realtime::resizeGL(int w, int h) {
-    // Tells OpenGL how big the screen is
-    glViewport(0, 0, w, h);
-
-    // Students: anything requiring OpenGL calls when the program starts should be done here
     m_width = w;
     m_height = h;
+
+    // Tells OpenGL how big the screen is
+    glViewport(0, 0, w, h);
+    m_fbo_width = m_width;
+    m_fbo_height = m_height;
+    glDeleteTextures(1, &m_fbo_texture);
+    glDeleteRenderbuffers(1, &m_fbo_renderbuffer);
+    glDeleteFramebuffers(1, &m_fbo);
+    makeFBO();
+
     if (isInited()) {
         m_scene->setDimensions(w, h);
     } else {
         tryInitScene();
     }
+}
+
+void Realtime::damageTaken() {
+    *m_taken_damage = false;
+    m_damage_filter = true;
+    m_damage_end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ON_DAMAGE_SCREEN_RED_MS);
 }
 
 void Realtime::keyPressEvent(int key) {
@@ -174,6 +372,18 @@ void Realtime::timerEvent(double elapsedSeconds) {
     if (m_keyMap[GLFW_KEY_ESCAPE]) {
         mainWindow.close();
     }
+
+    // temp filter test code, use 'i' to invert, and 'b' to blur scene TODO remove
+    if (m_keyMap[GLFW_KEY_I]) {
+        settings.perPixelFilter = !settings.perPixelFilter;
+        m_keyMap[GLFW_KEY_I] = false;
+    }
+
+    if (m_keyMap[GLFW_KEY_B]) {
+        settings.kernelBasedFilter = !settings.kernelBasedFilter;
+        m_keyMap[GLFW_KEY_B] = false;
+    }
+
 
     // call scene tick
     if (isInited()) {

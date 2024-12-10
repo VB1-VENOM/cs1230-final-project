@@ -60,6 +60,7 @@ public:
 private:
     // we could avoid storing a new keymap/etc for each object, but i found this the simplest way of designing things
     std::unordered_map<int, bool> m_keyMap;
+    std::unordered_map<int, bool> m_mouseButtonMap;
     std::optional<glm::dvec2> m_prev_mouse_pos;
 
     std::shared_ptr<Camera> m_camera;
@@ -69,4 +70,8 @@ private:
 
     // java-like super
     typedef CollisionObject super;
+
+
+    void spawnBullet();
 };
+

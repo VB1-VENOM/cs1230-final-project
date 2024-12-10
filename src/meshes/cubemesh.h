@@ -3,6 +3,15 @@
 #pragma once
 #include "primitivemesh.h"
 
+enum class CubeFaceType {
+    POS_X,
+    NEG_X,
+    POS_Y,
+    NEG_Y,
+    POS_Z,
+    NEG_Z,
+};
+
 class CubeMesh : public PrimitiveMesh {
 public:
     CubeMesh(int param1, int param2);
@@ -13,15 +22,18 @@ protected:
     int getExpectedVectorSize() override;
     void generateVertexData() override;
 private:
+    static glm::vec2 getUV(glm::vec3 pos, CubeFaceType face);
 
     void makeTile(glm::vec3 topLeft,
                   glm::vec3 topRight,
                   glm::vec3 bottomLeft,
-                  glm::vec3 bottomRight);
+                  glm::vec3 bottomRight,
+                  CubeFaceType face);
     // bottom right can be derived since we know these are all squares!
     void makeFace(glm::vec3 topLeft,
                   glm::vec3 topRight,
-                  glm::vec3 bottomLeft);
+                  glm::vec3 bottomLeft,
+                  CubeFaceType face);
 };
 
 

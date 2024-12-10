@@ -6,11 +6,13 @@
 
 #include <map>
 #include <ranges>
+
 #include "utils/scenedata.h"
 #include "camera.h"
 #include "objects/realtimeobject.h"
 #include "objects/collisionobject.h"
 #include "objects/playerobject.h"
+
 #include <unordered_set>
 
 
@@ -23,6 +25,9 @@ struct pair_hash {
     }
 };
 
+#include "objects/enemyobject.h"
+
+
 /// Analogous to RayTraceScene from project 3/4; represents a scene to be rendered in real-time
 /// An instance of this class is created each time the scene is changed in the GUI
 class RealtimeScene : public std::enable_shared_from_this<RealtimeScene> {
@@ -33,7 +38,7 @@ public:
     /// Note: the `meshes` map is copied to avoid reference issues; the meshes themselves are not copied
     static std::shared_ptr<RealtimeScene> init(int width, int height, const std::string& sceneFilePath,
                                              float nearPlane, float farPlane,
-                                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
+                                             std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes, std::shared_ptr<bool> taken_damage);
 
     /// Paints every object in the scene; to be called in paintGL
     void paintObjects();
@@ -58,7 +63,7 @@ public:
     void updateSettings(float nearPlane, float farPlane);
 
     /// Passes the shader ID to the scene (can't be done in the constructor because the shader isn't created yet)
-    void initShader(GLuint shader);
+    void initShader(GLuint phongShader);
     /// Returns whether the shader has been initialized
     bool shaderInitialized() const;
 
@@ -89,6 +94,7 @@ public:
     void mousePressEvent(int button);
     void mouseReleaseEvent(int button);
     void mouseMoveEvent(double xpos, double ypos);
+
     std::shared_ptr <RealtimeObject> addBuilding(const glm::vec3& position);
     void updateDynamicCity(const glm::vec3& playerPosition, float updateRadius);
     //std::shared_ptr<RealtimeScene> generateProceduralCity(int cityWidth, int cityDepth, int blockSize);
@@ -99,6 +105,10 @@ public:
     std::vector<std::weak_ptr<CollisionObject>> m_collisionObjects;
     std::shared_ptr<PlayerObject> m_playerObject;
     //std::pair<int, int> gridCoord;
+
+
+    void finish();
+
 private:
     RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
                   std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);
@@ -116,7 +126,9 @@ private:
     // need this to not be a reference to avoid C++ issues; so there's just two copies of this map at all times, oh welllll
     // (it's fineeee, the meshes themselves aren't copied)
     std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> m_meshes;
-    std::optional<GLuint> m_shader;
+    std::optional<GLuint> m_phongShader;
+
+    std::shared_ptr<bool> m_taken_damage;
 
     // helper functions for passing uniforms to the shader (and checking for -1 locations)
     void passUniformMat4(const char* name, const glm::mat4& mat);
@@ -132,6 +144,18 @@ private:
 
     /// convert enum class LightType to the corresponding uniform value
     static GLuint lightTypeToUniform(LightType type);
+
+    //Skybox stuff
+    std::shared_ptr<RealtimeObject> m_skyboxObject;
+    GLuint m_skyboxTextureID;
+    // GLuint loadCubemap(std::vector<std::string> faces);
+    std::optional<GLuint> m_skyboxShader;
+
+
+
+    // Helper function for initializing enemies
+    std::vector<std::shared_ptr<EnemyObject>> createEnemies(std::vector<glm::vec3> enemy_positions,
+        std::shared_ptr<RealtimeScene> scene);
 };
 
 #pragma clang diagnostic pop

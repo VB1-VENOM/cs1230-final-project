@@ -12,12 +12,15 @@ protected:
     int getExpectedVectorSize() override;
     void generateVertexData() override;
 private:
-    void makeTopTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight);
-    void makeBottomTipTile(glm::vec3 center, glm::vec3 topLeft, glm::vec3 topRight);
+    static glm::vec2 getUV(glm::vec3 pos, float theta);
+    void makeTopTipTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight, float leftTheta, float rightTheta);
+    void makeBottomTipTile(glm::vec3 center, glm::vec3 topLeft, glm::vec3 topRight, float leftTheta, float rightTheta);
     void makeTile(glm::vec3 topLeft,
                   glm::vec3 topRight,
                   glm::vec3 bottomLeft,
-                  glm::vec3 bottomRight);
+                  glm::vec3 bottomRight,
+                  float leftTheta,
+                  float rightTheta);
     void makeWedge(float currTheta, float nextTheta);
 };
 

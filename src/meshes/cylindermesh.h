@@ -3,6 +3,12 @@
 #pragma once
 #include "primitivemesh.h"
 
+enum class CylinderFaceType {
+    TOP_CAP,
+    BOTTOM_CAP,
+    SIDE,
+};
+
 class CylinderMesh : public PrimitiveMesh {
 public:
     CylinderMesh(int param1, int param2);
@@ -12,15 +18,20 @@ protected:
     int getExpectedVectorSize() override;
     void generateVertexData() override;
 private:
-    void makeCapCenterTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight);
+    static glm::vec2 getUV(glm::vec3 pos, CylinderFaceType face, float theta);
+
+    void makeCapCenterTile(glm::vec3 center, glm::vec3 bottomLeft, glm::vec3 bottomRight, CylinderFaceType face, float leftTheta, float rightTheta);
     void makeCapTile(glm::vec3 topLeft,
                      glm::vec3 topRight,
                      glm::vec3 bottomLeft,
-                     glm::vec3 bottomRight);
-    void makeCapWedge(float currentTheta, float nextTheta, float z);
+                     glm::vec3 bottomRight,
+                     CylinderFaceType face,
+                     float leftTheta,
+                     float rightTheta);
+    void makeCapWedge(float currentTheta, float nextTheta, float z, CylinderFaceType face, float leftTheta, float rightTheta);
     void makeCaps();
 
-    void makeSideTile(glm::vec3 topLeft, glm::vec3 topRight, glm::vec3 bottomLeft, glm::vec3 bottomRight);
+    void makeSideTile(glm::vec3 topLeft, glm::vec3 topRight, glm::vec3 bottomLeft, glm::vec3 bottomRight, float leftTheta, float rightTheta);
     void makeSide(float currentTheta, float nextTheta);
     void makeSides();
 };

@@ -5,19 +5,24 @@
 #include "objects/realtimeobject.h"
 #include "objects/staticobject.h"
 #include "glm/ext/matrix_transform.hpp"
+
 #include "objects/playerobject.h"
 #include <random>
 #include <unordered_set>
 #include <utility> // For std::pair
 #include <functional> // For std::hash
+#include "utils/helpers.h"
+#include "material_constants/enemy_materials.h"
+
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "ConstantParameter"
-#define MAX_LIGHTS 8
+#define MAX_LIGHTS 16
 
 const unsigned int SHADER_LIGHT_POINT       = 0x1u;
 const unsigned int SHADER_LIGHT_DIRECTIONAL = 0x2u;
 const unsigned int SHADER_LIGHT_SPOT        = 0x4u;
+
 
 void printActiveGrids(const std::unordered_set<std::pair<int, int>, pair_hash>& activeGrids) {
     std::cout << "Active Grids:" << std::endl;
@@ -28,9 +33,41 @@ void printActiveGrids(const std::unordered_set<std::pair<int, int>, pair_hash>& 
 
 std::unordered_set<std::pair<int, int>, pair_hash> RealtimeScene::m_activeGrids;
 
+
+
+// GLuint loadCubemap(std::vector<std::string> faces) {
+//     GLuint cubemapID;
+//     glGenTextures(1, &cubemapID);
+//     glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapID);
+//
+//     for (GLuint i = 0; i < faces.size(); i++) {
+//         // Load each face image using your custom loadImageFromFile function
+//         std::unique_ptr<Image> img = loadImageFromFile(faces[i]);
+//         if (!img) {
+//             std::cerr << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+//             continue;
+//         }
+//
+//         // Upload the image to the corresponding face of the cube map
+//         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+//                      0, GL_RGBA, img->width, img->height,
+//                      0, GL_RGBA, GL_UNSIGNED_BYTE, img->data.data());
+//     }
+//
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//
+//     return cubemapID;
+// }
+
+
 std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const std::string& sceneFilePath,
-                                                   float nearPlane, float farPlane,
-                                                   std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) {
+                                                 float nearPlane, float farPlane,
+                                                 std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes, std::shared_ptr<bool> taken_damage) {
+
     RenderData renderData;
     if (!SceneParser::parse(sceneFilePath, renderData)) {
         std::cerr << "Failed to initialize scene: failed to parse scene file" << std::endl;
@@ -40,6 +77,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
         std::cerr << "Failed to initialize scene: too many lights" << std::endl;
         return {nullptr};
     }
+
 
     SceneCameraData cameraData;
 
@@ -59,6 +97,11 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     cameraData.aperture = 0.0f;    // No depth of field effect
     cameraData.focalLength = 50.0f; // Default focal length
 
+    newScene->m_taken_damage = taken_damage;
+    // all this below initialization must be done in this factory function, not the constructor, due to needing to pass a shared_ptr
+    // to this scene to the objects
+
+
     auto newScene = std::shared_ptr<RealtimeScene>(new RealtimeScene(width, height, nearPlane, farPlane, renderData.globalData, cameraData, std::move(meshes)));
 
     // All initialization must be done here since a shared_ptr to this scene is required.
@@ -66,6 +109,7 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     // Add static collidable objects from the parsed scene.
     newScene->m_objects.reserve(renderData.shapes.size() + 1);
     newScene->m_collisionObjects.reserve(renderData.shapes.size() + 1);
+
     // for (const auto& shape : renderData.shapes) {
     //     auto staticObject = std::make_shared<StaticObject>(shape, newScene);
     //     auto collisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(staticObject));
@@ -81,20 +125,15 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     // Start player scaled up by 1 unit and centered at the camera position
     glm::mat4 playerCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f)), newScene->m_camera->pos());
     RenderShapeData playerShapeData = RenderShapeData(playerPrimitive, playerCTM);
+
     newScene->m_playerObject = std::make_shared<PlayerObject>(playerShapeData, newScene, newScene->m_camera);
     auto playerCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(newScene->m_playerObject));
     auto playerRealtimeObject = std::static_pointer_cast<RealtimeObject>(newScene->m_playerObject);
     newScene->m_objects.push_back(playerRealtimeObject);
     newScene->m_collisionObjects.push_back(playerCollisionObject);
 
-    // Add lights to the scene
-    newScene->m_lights.reserve(MAX_LIGHTS);
-    for (const auto& light : renderData.lights) {
-        // Normalize light direction for performance and accuracy
-        newScene->m_lights.emplace_back(light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
-                                        light.penumbra, light.angle, light.width, light.height);
-    }
 
+  
     // Generate and add the procedural city to the scene
     int cityRows = 3;   // Number of rows for the city grid
     int cityCols = 3;   // Number of columns for the city grid
@@ -109,7 +148,58 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 
     RealtimeScene::m_activeGrids.insert({0, 0});
 
+    //create enemies
+    std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,1.5,1.5)};
+    auto enemyList = newScene->createEnemies(enemyPositions,newScene);
+    for (auto enemy : enemyList)
+    {
+        auto enemyCollisionObject = std::weak_ptr<CollisionObject>(std::static_pointer_cast<CollisionObject>(enemy));
+        auto enemyRealtimeObject = std::static_pointer_cast<RealtimeObject>(enemy);
+
+        newScene->m_collisionObjects.push_back(enemyCollisionObject);
+        newScene->m_objects.push_back(enemyRealtimeObject);
+    }
+
+    newScene->m_lights.reserve(MAX_LIGHTS);
+    for (const auto& light : renderData.lights) {
+        // normalizing is important (and faster to do here than on the gpu for every fragment)
+        newScene->m_lights.push_back({light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
+                              light.penumbra, light.angle, light.width, light.height});
+    }
+    //Create skybox object
+    ScenePrimitive skyboxPrimitive{PrimitiveType::PRIMITIVE_SKYBOX,
+        SceneMaterial{SceneColor{0.f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
+    skyboxPrimitive.material.textureMap.isUsed = true;
+    skyboxPrimitive.material.textureMap.filename = "scenefiles/moretextures/stars.png";
+
+    skyboxPrimitive.material.blend = 0.5f;  // Adjust blend factor as needed
+    skyboxPrimitive.material.textureMap.repeatU = 1.0f;  // Set U repeat value
+    skyboxPrimitive.material.textureMap.repeatV = 1.0f;  // Set V repeat value
+
+    glm::mat4 skyboxCTM = glm::scale(glm::mat4(1.0f), glm::vec3(100.0f));  // Scale skybox to surround the scene
+    RenderShapeData skyboxShapeData = RenderShapeData{skyboxPrimitive, skyboxCTM};
+    auto skyboxObject = std::make_shared<RealtimeObject>(skyboxShapeData, newScene);
+    newScene->m_objects.push_back(skyboxObject);
+    // newScene->m_skyboxObject = skyboxObject;
+    //Add texture for skybox
     return newScene;
+}
+
+std::vector<std::shared_ptr<EnemyObject>> RealtimeScene::createEnemies(std::vector<glm::vec3> enemy_positions,
+    std::shared_ptr<RealtimeScene> scene)
+{
+    std::vector<std::shared_ptr<EnemyObject>> enemies;
+    for(glm::vec3 position : enemy_positions)
+    {
+        ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
+        // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
+        glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
+        RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
+
+        enemies.push_back(std::make_shared<EnemyObject>(enemyShapeData, scene, m_camera, m_taken_damage));
+
+    }
+    return enemies;
 }
 
 
@@ -172,7 +262,8 @@ void RealtimeScene::paintObjects() {
         std::cerr << "Failed to paint objects: shader not initialized" << std::endl;
         return;
     }
-    glUseProgram(*m_shader);
+
+    glUseProgram(*m_phongShader);
     passUniformMat4("view", m_camera->viewMatrix());
     passUniformMat4("proj", m_camera->projectionMatrix());
     passUniformInt("numLights", (int) m_lights.size());
@@ -181,11 +272,26 @@ void RealtimeScene::paintObjects() {
     passUniformFloat("ka", m_globalData.ka);
     passUniformFloat("kd", m_globalData.kd);
     passUniformFloat("ks", m_globalData.ks);
+    // set texture slot
+    glActiveTexture(GL_TEXTURE0);
     for (const auto& object : m_objects) {
         if (!object->shouldRender()) {
             continue;
         }
         const SceneMaterial& material = object->material();
+        if (object->usesTexture()) {
+            if (!object->glTexAllocated()) {
+                object->allocateGLTex();
+            }
+            glBindTexture(GL_TEXTURE_2D, object->glTexID());
+            passUniformInt("usesTexture", 1);
+            // TODO is it okay to sometimes not pass these uniforms?
+            passUniformFloat("blend", material.blend);
+            passUniformFloat("repeatU", material.textureMap.repeatU);
+            passUniformFloat("repeatV", material.textureMap.repeatV);
+        } else {
+            passUniformInt("usesTexture", 0);
+        }
         passUniformMat4("model", object->CTM());
         passUniformMat3("inverseTransposeModel", object->inverseTransposeCTM());
         passUniformVec3("cAmbient", material.cAmbient.xyz());
@@ -193,34 +299,47 @@ void RealtimeScene::paintObjects() {
         passUniformVec3("cSpecular", material.cSpecular.xyz());
         passUniformFloat("shininess", material.shininess);
         glBindVertexArray(object->mesh()->vao());
+        if (object->type() == PrimitiveType::PRIMITIVE_SKYBOX)
+        {
+            passUniformInt("isSkybox", 1);
+        } else
+        {
+            passUniformInt("isSkybox", 0);
+        }
         glDrawArrays(GL_TRIANGLES, 0, (GLsizei) (object->mesh()->vertexData().size() / 3));
         glBindVertexArray(0);
+        if (object->usesTexture()) {
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
     }
     glUseProgram(0);
 }
 
+
+
+
 void RealtimeScene::passUniformMat4(const char* name, const glm::mat4& mat) {
-    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
+    helpers::passUniformMat4(m_phongShader.value(), name, mat);
 }
 
 void RealtimeScene::passUniformMat3(const char* name, const glm::mat3& mat) {
-    glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &mat[0][0]);
+    helpers::passUniformMat3(m_phongShader.value(), name, mat);
 }
 
 void RealtimeScene::passUniformFloat(const char* name, float value) {
-    glUniform1f(getUniformLocation(name), value);
+    helpers::passUniformFloat(m_phongShader.value(), name, value);
 }
 
 void RealtimeScene::passUniformInt(const char* name, int value) {
-    glUniform1i(getUniformLocation(name), value);
+    helpers::passUniformInt(m_phongShader.value(), name, value);
 }
 
 void RealtimeScene::passUniformVec3(const char* name, const glm::vec3& vec) {
-    glUniform3fv(getUniformLocation(name), 1, &vec[0]);
+    helpers::passUniformVec3(m_phongShader.value(), name, vec);
 }
 
 void RealtimeScene::passUniformVec3Array(const char* name, const std::vector<glm::vec3>& vecs) {
-    glUniform3fv(getUniformLocation(name), (GLint) vecs.size(), &vecs[0][0]);
+    helpers::passUniformVec3Array(m_phongShader.value(), name, vecs);
 }
 
 void RealtimeScene::passUniformLightArray(const char* name, const std::vector<SceneLightData>& lights) {
@@ -243,16 +362,9 @@ void RealtimeScene::passUniformLight(const char* name, SceneLightData type) {
     glUniform1f(getUniformLocation((lightName + ".angle").c_str()), type.angle);
 }
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "ConstantConditionsOC"
 GLint RealtimeScene::getUniformLocation(const char* name, bool checkValidLoc) const {
-    GLint loc = glGetUniformLocation(*m_shader, name);
-    if (checkValidLoc && loc == -1) {
-        std::cerr << "Could not find uniform " << name << " in shader program" << std::endl;
-    }
-    return loc;
+    return helpers::getUniformLocation(m_phongShader.value(), name, checkValidLoc);
 }
-#pragma clang diagnostic pop
 
 void RealtimeScene::setDimensions(int width, int height) {
     m_width = width;
@@ -269,12 +381,12 @@ void RealtimeScene::updateSettings(float nearPlane, float farPlane) {
     }
 }
 
-void RealtimeScene::initShader(GLuint shader) {
-    m_shader = shader;
+void RealtimeScene::initShader(GLuint phongShader) {
+    m_phongShader = phongShader;
 }
 
 bool RealtimeScene::shaderInitialized() const {
-    return m_shader.has_value();
+    return m_phongShader.has_value();
 }
 
 
@@ -309,6 +421,7 @@ void RealtimeScene::keyReleaseEvent(int key) {
 
 void RealtimeScene::mousePressEvent(int button) {
     m_playerObject->mousePressEvent(button);
+
 }
 
 void RealtimeScene::mouseReleaseEvent(int button) {
@@ -322,10 +435,12 @@ void RealtimeScene::mouseMoveEvent(double xpos, double ypos) {
 std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, const glm::mat4& ctm, const SceneMaterial& material,
                                                          RealtimeObjectType objType) {
     switch (objType) {
-    case RealtimeObjectType::OBJECT:
-        return addObject(std::make_unique<RealtimeObject>(RenderShapeData(ScenePrimitive{type, material}, ctm), shared_from_this()));
-    case RealtimeObjectType::STATIC:
-        return addObject(std::make_unique<StaticObject>(RenderShapeData(ScenePrimitive{type, material}, ctm), shared_from_this()));
+
+        case RealtimeObjectType::OBJECT:
+            return addObject(std::make_unique<RealtimeObject>(RenderShapeData{ScenePrimitive{type, material}, ctm}, shared_from_this()));
+        case RealtimeObjectType::STATIC:
+            return addObject(std::make_unique<StaticObject>(RenderShapeData{ScenePrimitive{type, material}, ctm}, shared_from_this()));
+
     }
     throw std::runtime_error("Invalid object type");
 }
@@ -347,6 +462,7 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(std::unique_ptr<Realtim
     return objectShared;
 }
 
+
 const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& RealtimeScene::meshes() const {
     return m_meshes;
 }
@@ -354,6 +470,7 @@ const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& RealtimeScene::me
 const std::vector<std::weak_ptr<CollisionObject>>& RealtimeScene::collisionObjects() const {
     return m_collisionObjects;
 }
+
 
 
 
@@ -612,6 +729,14 @@ void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float upd
 
 
 
+
+
+
+void RealtimeScene::finish() {
+    for (const auto& object : m_objects) {
+        object->finish();
+    }
+}
 
 
 #pragma clang diagnostic pop

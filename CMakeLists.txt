@@ -19,6 +19,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 # Include the current directory for header files
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_PREFIX_PATH "C:/Users/bcher/Desktop/CS1230/glfw-3.4.bin.WIN64")
 
 # Allows you to include files from within those directories, without prefixing their filepaths
 include_directories(src)
@@ -70,6 +71,24 @@ add_executable(${PROJECT_NAME}
     src/aabb.cpp
     src/objects/playerobject.cpp
     src/objects/playerobject.h
+    src/objects/enemyobject.cpp
+    src/objects/enemyobject.h
+    src/objects/projectileobject.cpp
+    src/objects/projectileobject.h
+    src/utils/helpers.h
+    src/utils/helpers.cpp
+    src/material_constants/enemy_materials.cpp
+    src/material_constants/enemy_materials.h
+    src/objects/ncprojectileobject.cpp
+    src/objects/ncprojectileobject.h
+        src/utils/imagereader.cpp
+        src/utils/imagereader.h
+        src/utils/rgba.h
+        src/utils/stb_image.h
+        src/meshes/skycubemesh.cpp
+        src/meshes/skycubemesh.h
+
+
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`
@@ -89,8 +108,13 @@ FetchContent_MakeAvailable(json)
 # find OpenGL
 find_package(OpenGL REQUIRED)
 
-# find GLFW
-find_package(glfw3 3.4 REQUIRED)
+# I LOVE WINDOWS
+if (MINGW)
+  FetchContent_Declare(glfw URL https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip)
+  FetchContent_MakeAvailable(glfw)
+else()
+  find_package(glfw3 3.4 REQUIRED)
+endif()
 
 # Include GLFW directories
 include_directories(${GLFW_INCLUDE_DIRS})

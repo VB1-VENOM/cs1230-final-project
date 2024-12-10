@@ -7,6 +7,8 @@
 #include <iostream>
 #include "playerobject.h"
 #include "realtimescene.h"
+#include "projectileobject.h"
+
 
 
 PlayerObject::PlayerObject(const RenderShapeData& data,
@@ -15,6 +17,15 @@ PlayerObject::PlayerObject(const RenderShapeData& data,
     : super(data, scene), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt) {
     // player shouldn't render by default
     setShouldRender(false);
+    // don't collide with projectiles
+    setCollisionFilter([](std::shared_ptr<CollisionObject> object) {
+        // Don't collide with the player
+        if (std::dynamic_pointer_cast<ProjectileObject>(object)) {
+            return false;
+        } else {
+            return true;
+        }
+    });
 }
 
 void PlayerObject::translate(const glm::vec3& translation) {
@@ -88,10 +99,11 @@ void PlayerObject::tick(double elapsedSeconds) {
     // TODO remove this in the future
     if (m_keyMap[GLFW_KEY_E]) {
         m_keyMap[GLFW_KEY_E] = false;
-        //scene()->generateProceduralCity(0,0,100, 100, 10);
-            scene()->addObject(PrimitiveType::PRIMITIVE_CONE, glm::translate(glm::mat4(1.f), m_camera->pos() + 2.f * m_camera->look()),
-                               SceneMaterial{SceneColor(0.1f, 0.1f, 0.1f, 1.f), SceneColor(1.f, 1.f, 1.f, 1.f)},
-                               RealtimeObjectType::STATIC);
+
+        scene()->addObject(PrimitiveType::PRIMITIVE_CONE, glm::translate(glm::mat4(1.f), m_camera->pos() + 2.f * m_camera->look()),
+                           SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}},
+                           RealtimeObjectType::STATIC);
+
     }
     // example usage of removing object from scene
     // TODO remove this in the future
@@ -99,7 +111,7 @@ void PlayerObject::tick(double elapsedSeconds) {
         auto collisionInfoLookOpt = getCollisionInfo(m_camera->look());
         if (collisionInfoLookOpt.has_value()) {
             m_keyMap[GLFW_KEY_R] = false;
-            collisionInfoLookOpt->object->queueFree();
+            (*collisionInfoLookOpt->objects.begin())->queueFree();
         }
     }
 
@@ -111,6 +123,31 @@ void PlayerObject::tick(double elapsedSeconds) {
 
 
     translate(translation);
+
+    if (m_mouseButtonMap[GLFW_MOUSE_BUTTON_LEFT]) {
+        spawnBullet();
+        m_mouseButtonMap[GLFW_MOUSE_BUTTON_LEFT] = false;
+    }
+}
+
+void PlayerObject::spawnBullet() {
+    // Create a projectile and add it to the scene
+    // glm::vec3 spawnPosition = m_camera->pos() + m_camera->look() * 1.5f; // Spawn slightly in front of the player
+    glm::vec3 spawnPosition = m_camera->pos();
+    glm::vec3 direction = m_camera->look();
+
+    // Create the projectile's render shape data
+    ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_SPHERE,
+                                       SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
+
+    glm::mat4 projectileCTM =  glm::translate(glm::mat4(1.f), spawnPosition);
+    projectileCTM = glm::scale(projectileCTM, glm::vec3(0.2f));  // Scaling factor (make it smaller)
+
+    RenderShapeData projectileData{projectilePrimitive, projectileCTM};
+
+    // Add projectile to the scene
+    scene()->addObject(std::make_unique<ProjectileObject>(
+            projectileData, scene(), direction, 10.f, 50.f, true)); // Speed: 10, Max Distance: 50
 }
 
 void PlayerObject::keyPressEvent(int key) {
@@ -122,11 +159,11 @@ void PlayerObject::keyReleaseEvent(int key) {
 }
 
 void PlayerObject::mousePressEvent(int button) {
-    // currently not doing anything with mouse presses for player
+    m_mouseButtonMap[button] = true;
 }
 
 void PlayerObject::mouseReleaseEvent(int button) {
-    // currently not doing anything with mouse presses for player
+    m_mouseButtonMap[button] = false;
 }
 
 void PlayerObject::mouseMoveEvent(double xpos, double ypos) {
@@ -137,6 +174,7 @@ void PlayerObject::mouseMoveEvent(double xpos, double ypos) {
     double deltaX = xpos - m_prev_mouse_pos->x;
     double deltaY = ypos - m_prev_mouse_pos->y;
 
+    // TODO implement normal FPS up/down camera limits
     // Use deltaX and deltaY here to rotate (negate them because idk)
     m_camera->rotate(glm::vec3(0.f, 1.f, 0.f), (float) -deltaX * ROTATE_SENSITIVITY);
     m_camera->rotate(glm::normalize(glm::cross(m_camera->look(), m_camera->up())), (float) -deltaY * ROTATE_SENSITIVITY);
