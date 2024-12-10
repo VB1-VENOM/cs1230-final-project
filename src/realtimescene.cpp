@@ -150,9 +150,6 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
 
     RealtimeScene::m_activeGrids.insert({0, 0});
 
-    //create enemies
-    std::vector<glm::vec3> enemyPositions = {glm::vec3(1.5,15 ,1.5)};
-
     for (const auto& light : renderData.lights) {
         // normalizing is important (and faster to do here than on the gpu for every fragment)
         newScene->m_lights->push_back({light.id, light.type, light.color, light.function, light.pos, glm::normalize(light.dir),
@@ -174,11 +171,25 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     auto skyboxObjectRealtime = std::static_pointer_cast<RealtimeObject>(skyboxObject);
     newScene->m_objects.push_back(skyboxObjectRealtime);
     //Add texture for skybox
-
-    //start the grace period counter
     return newScene;
 }
 
+std::vector<std::shared_ptr<EnemyObject>> RealtimeScene::createEnemies(std::vector<glm::vec3> enemy_positions,
+    std::shared_ptr<RealtimeScene> scene)
+{
+    std::vector<std::shared_ptr<EnemyObject>> enemies;
+    for(glm::vec3 position : enemy_positions)
+    {
+        ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
+        // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
+        glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
+        RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
+
+        enemies.push_back(std::make_shared<EnemyObject>(enemyShapeData, scene, m_camera, m_taken_damage));
+
+    }
+    return enemies;
+}
 
 
 
@@ -493,8 +504,6 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
         baseZ + floorDepth / 2.0f - spacing / 2.0f  // Center the floor in the Z-axis
         );
 
-
-
     glm::mat4 floorTransform = glm::translate(glm::mat4(1.0f), floorPosition) *
                                glm::scale(glm::mat4(1.0f), glm::vec3(floorWidth, floorHeight, floorDepth));
 
@@ -559,7 +568,6 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
 
             // Mark the grid coordinate as having a building
             existingBuildings.insert(gridCoord);
-
         }
     }
 }

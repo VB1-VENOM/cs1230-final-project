@@ -89,7 +89,6 @@ add_executable(${PROJECT_NAME}
         src/meshes/skymesh.h
         src/objects/skyboxobject.h
         src/objects/skyboxobject.cpp
-        resources/shaders/building.frag
 
 
 )
@@ -98,8 +97,7 @@ add_executable(${PROJECT_NAME}
 add_subdirectory(glm)
 
 # GLEW: this creates its library and allows you to `#include "GL/glew.h"`
-add_library(StaticGLEW STATIC glew/src/glew.c
-    resources/shaders/building.vert)
+add_library(StaticGLEW STATIC glew/src/glew.c)
 include_directories(${PROJECT_NAME} PRIVATE glew/include)
 
 # for fetching the source of external libraries
