@@ -94,13 +94,13 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     ScenePrimitive skyboxPrimitive{PrimitiveType::PRIMITIVE_SKYBOX,
         SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
     skyboxPrimitive.material.textureMap.isUsed = true;
-    skyboxPrimitive.material.textureMap.filename = "scenefiles/illuminate/textures/marsTexture.png";
+    skyboxPrimitive.material.textureMap.filename = "scenefiles/moretextures/stars.png";
 
     skyboxPrimitive.material.blend = 0.5f;  // Adjust blend factor as needed
     skyboxPrimitive.material.textureMap.repeatU = 1.0f;  // Set U repeat value
     skyboxPrimitive.material.textureMap.repeatV = 1.0f;  // Set V repeat value
 
-    glm::mat4 skyboxCTM = glm::scale(glm::mat4(1.0f), glm::vec3(5.0f));  // Scale skybox to surround the scene
+    glm::mat4 skyboxCTM = glm::scale(glm::mat4(1.0f), glm::vec3(100.0f));  // Scale skybox to surround the scene
     RenderShapeData skyboxShapeData = RenderShapeData{skyboxPrimitive, skyboxCTM};
     auto skyboxObject = std::make_shared<RealtimeObject>(skyboxShapeData, newScene);
     newScene->m_objects.push_back(skyboxObject);
