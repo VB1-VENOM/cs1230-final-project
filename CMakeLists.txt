@@ -79,6 +79,12 @@ add_executable(${PROJECT_NAME}
     src/utils/helpers.cpp
     src/material_constants/enemy_materials.cpp
     src/material_constants/enemy_materials.h
+    src/objects/ncprojectileobject.cpp
+    src/objects/ncprojectileobject.h
+        src/utils/imagereader.cpp
+        src/utils/imagereader.h
+        src/utils/rgba.h
+        src/utils/stb_image.h
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`

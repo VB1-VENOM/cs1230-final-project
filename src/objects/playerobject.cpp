@@ -16,6 +16,15 @@ PlayerObject::PlayerObject(const RenderShapeData& data,
         : super(data, scene), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt) {
     // player shouldn't render by default
     setShouldRender(false);
+    // don't collide with projectiles
+    setCollisionFilter([](std::shared_ptr<CollisionObject> object) {
+        // Don't collide with the player
+        if (std::dynamic_pointer_cast<ProjectileObject>(object)) {
+            return false;
+        } else {
+            return true;
+        }
+    });
 }
 
 void PlayerObject::translate(const glm::vec3& translation) {
@@ -99,7 +108,7 @@ void PlayerObject::tick(double elapsedSeconds) {
         auto collisionInfoLookOpt = getCollisionInfo(m_camera->look());
         if (collisionInfoLookOpt.has_value()) {
             m_keyMap[GLFW_KEY_R] = false;
-            collisionInfoLookOpt->object->queueFree();
+            (*collisionInfoLookOpt->objects.begin())->queueFree();
         }
     }
 
@@ -109,6 +118,30 @@ void PlayerObject::tick(double elapsedSeconds) {
     }
 
     translate(translation);
+
+    if (m_mouseButtonMap[GLFW_MOUSE_BUTTON_LEFT]) {
+        spawnBullet();
+        m_mouseButtonMap[GLFW_MOUSE_BUTTON_LEFT] = false;
+    }
+}
+
+void PlayerObject::spawnBullet() {
+    // Create a projectile and add it to the scene
+    // glm::vec3 spawnPosition = m_camera->pos() + m_camera->look() * 1.5f; // Spawn slightly in front of the player
+    glm::vec3 spawnPosition = m_camera->pos();
+    glm::vec3 direction = m_camera->look();
+
+    // Create the projectile's render shape data
+    ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_SPHERE,
+                                       SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
+    glm::mat4 projectileCTM =  glm::translate(glm::mat4(1.f), spawnPosition);
+    projectileCTM = glm::scale(projectileCTM, glm::vec3(0.2f));  // Scaling factor (make it smaller)
+
+    RenderShapeData projectileData{projectilePrimitive, projectileCTM};
+
+    // Add projectile to the scene
+    scene()->addObject(std::make_unique<ProjectileObject>(
+            projectileData, scene(), direction, 10.f, 50.f, true)); // Speed: 10, Max Distance: 50
 }
 
 void PlayerObject::keyPressEvent(int key) {
@@ -119,29 +152,12 @@ void PlayerObject::keyReleaseEvent(int key) {
     m_keyMap[key] = false;
 }
 
-void PlayerObject::mousePressEvent(int button)
-{
-    if (button == GLFW_MOUSE_BUTTON_LEFT) {
-        // Create a projectile and add it to the scene
-        glm::vec3 spawnPosition = m_camera->pos() + m_camera->look() * 2.f; // Spawn slightly in front of the player
-        glm::vec3 direction = m_camera->look();
-
-        // Create the projectile's render shape data
-        ScenePrimitive projectilePrimitive{PrimitiveType::PRIMITIVE_CYLINDER,
-            SceneMaterial{SceneColor{0.1f, 0.1f, 0.1f, 1.f}, SceneColor{1.f, 1.f, 1.f, 1.f}}};
-        glm::mat4 projectileCTM =  glm::translate(glm::mat4(1.f), spawnPosition);
-        projectileCTM = glm::scale(projectileCTM, glm::vec3(0.2f));  // Scaling factor (make it smaller)
-
-        RenderShapeData projectileData{projectilePrimitive, projectileCTM};
-
-        // Add projectile to the scene
-        scene()->addObject(std::make_unique<ProjectileObject>(
-            projectileData, scene(), direction, 20.f, 50.f)); // Speed: 20, Max Distance: 50
-    }
+void PlayerObject::mousePressEvent(int button) {
+    m_mouseButtonMap[button] = true;
 }
 
 void PlayerObject::mouseReleaseEvent(int button) {
-    // currently not doing anything with mouse presses for player
+    m_mouseButtonMap[button] = false;
 }
 
 void PlayerObject::mouseMoveEvent(double xpos, double ypos) {

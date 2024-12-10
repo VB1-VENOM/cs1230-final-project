@@ -69,6 +69,8 @@ public:
     void mousePressEvent(int button);
     void mouseReleaseEvent(int button);
     void mouseMoveEvent(double xpos, double ypos);
+
+    void finish();
 private:
     RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
                   std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes);

@@ -10,7 +10,7 @@
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "ConstantParameter"
-#define MAX_LIGHTS 8
+#define MAX_LIGHTS 16
 
 const unsigned int SHADER_LIGHT_POINT       = 0x1u;
 const unsigned int SHADER_LIGHT_DIRECTIONAL = 0x2u;
@@ -137,11 +137,26 @@ void RealtimeScene::paintObjects() {
     passUniformFloat("ka", m_globalData.ka);
     passUniformFloat("kd", m_globalData.kd);
     passUniformFloat("ks", m_globalData.ks);
+    // set texture slot
+    glActiveTexture(GL_TEXTURE0);
     for (const auto& object : m_objects) {
         if (!object->shouldRender()) {
             continue;
         }
         const SceneMaterial& material = object->material();
+        if (object->usesTexture()) {
+            if (!object->glTexAllocated()) {
+                object->allocateGLTex();
+            }
+            glBindTexture(GL_TEXTURE_2D, object->glTexID());
+            passUniformInt("usesTexture", 1);
+            // TODO is it okay to sometimes not pass these uniforms?
+            passUniformFloat("blend", material.blend);
+            passUniformFloat("repeatU", material.textureMap.repeatU);
+            passUniformFloat("repeatV", material.textureMap.repeatV);
+        } else {
+            passUniformInt("usesTexture", 0);
+        }
         passUniformMat4("model", object->CTM());
         passUniformMat3("inverseTransposeModel", object->inverseTransposeCTM());
         passUniformVec3("cAmbient", material.cAmbient.xyz());
@@ -151,9 +166,15 @@ void RealtimeScene::paintObjects() {
         glBindVertexArray(object->mesh()->vao());
         glDrawArrays(GL_TRIANGLES, 0, (GLsizei) (object->mesh()->vertexData().size() / 3));
         glBindVertexArray(0);
+        if (object->usesTexture()) {
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
     }
     glUseProgram(0);
 }
+
+
+
 
 void RealtimeScene::passUniformMat4(const char* name, const glm::mat4& mat) {
     helpers::passUniformMat4(m_phongShader.value(), name, mat);
@@ -303,6 +324,12 @@ const std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>>& RealtimeScene::me
 
 const std::vector<std::weak_ptr<CollisionObject>>& RealtimeScene::collisionObjects() const {
     return m_collisionObjects;
+}
+
+void RealtimeScene::finish() {
+    for (const auto& object : m_objects) {
+        object->finish();
+    }
 }
 
 #pragma clang diagnostic pop

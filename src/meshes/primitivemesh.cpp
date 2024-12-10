@@ -31,7 +31,7 @@ AABB PrimitiveMesh::computeAABB(const glm::mat4& ctm) const {
 
     std::optional<glm::vec3> min = std::nullopt;
     std::optional<glm::vec3> max = std::nullopt;
-    for (size_t i = 0; i < m_vertexData.size(); i += 6) {
+    for (size_t i = 0; i < m_vertexData.size(); i += FLOATS_PER_VERTEX) {
         glm::vec3 transformed = glm::vec3(ctm * glm::vec4(m_vertexData[i], m_vertexData[i + 1], m_vertexData[i + 2], 1));
         if (!min) {
             min = transformed;
@@ -89,13 +89,15 @@ bool PrimitiveMesh::glAllocated() const {
     return m_glAllocated;
 }
 
-void PrimitiveMesh::pushVertex(glm::vec3 v, glm::vec3 n) {
+void PrimitiveMesh::pushVertex(glm::vec3 v, glm::vec3 n, glm::vec2 uv) {
     m_vertexData.push_back(v.x);
     m_vertexData.push_back(v.y);
     m_vertexData.push_back(v.z);
     m_vertexData.push_back(n.x);
     m_vertexData.push_back(n.y);
     m_vertexData.push_back(n.z);
+    m_vertexData.push_back(uv.x);
+    m_vertexData.push_back(uv.y);
 }
 
 void PrimitiveMesh::allocateBuffers() {
@@ -111,11 +113,14 @@ void PrimitiveMesh::allocateBuffers() {
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBindVertexArray(m_vao);
     // vertex position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, FLOATS_PER_VERTEX * sizeof(float), (void*)nullptr);
     glEnableVertexAttribArray(0);
     // vertex normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, FLOATS_PER_VERTEX * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    // vertex uv attribute
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, FLOATS_PER_VERTEX * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
     // unbind
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
