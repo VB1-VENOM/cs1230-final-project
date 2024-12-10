@@ -8,10 +8,11 @@
 #include "playerobject.h"
 #include "realtimescene.h"
 
+
 PlayerObject::PlayerObject(const RenderShapeData& data,
                            const std::shared_ptr<RealtimeScene>& scene,
                            std::shared_ptr<Camera> camera)
-        : super(data, scene), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt) {
+    : super(data, scene), m_camera(std::move(camera)), m_prev_mouse_pos(std::nullopt) {
     // player shouldn't render by default
     setShouldRender(false);
 }
@@ -87,10 +88,10 @@ void PlayerObject::tick(double elapsedSeconds) {
     // TODO remove this in the future
     if (m_keyMap[GLFW_KEY_E]) {
         m_keyMap[GLFW_KEY_E] = false;
-        scene()->generateProceduralCity(100, 100, 10);
-         // scene()->addObject(PrimitiveType::PRIMITIVE_CONE, glm::translate(glm::mat4(1.f), m_camera->pos() + 2.f * m_camera->look()),
-         //                    SceneMaterial{SceneColor(0.1f, 0.1f, 0.1f, 1.f), SceneColor(1.f, 1.f, 1.f, 1.f)},
-         //                    RealtimeObjectType::STATIC);
+        //scene()->generateProceduralCity(0,0,100, 100, 10);
+            scene()->addObject(PrimitiveType::PRIMITIVE_CONE, glm::translate(glm::mat4(1.f), m_camera->pos() + 2.f * m_camera->look()),
+                               SceneMaterial{SceneColor(0.1f, 0.1f, 0.1f, 1.f), SceneColor(1.f, 1.f, 1.f, 1.f)},
+                               RealtimeObjectType::STATIC);
     }
     // example usage of removing object from scene
     // TODO remove this in the future
@@ -106,6 +107,8 @@ void PlayerObject::tick(double elapsedSeconds) {
     if (m_onGround && !getCollisionInfo(glm::vec3(0.f, -EPSILON, 0.f)).has_value()) {
         m_onGround = false;
     }
+
+
 
     translate(translation);
 }

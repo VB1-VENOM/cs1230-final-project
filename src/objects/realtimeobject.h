@@ -47,6 +47,7 @@ public:
     bool isQueuedFree() const;
 
     std::shared_ptr<RealtimeScene> scene() const;
+
 private:
     std::weak_ptr<RealtimeScene> m_scene;
     bool m_shouldRender;
