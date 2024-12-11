@@ -8,7 +8,7 @@
 #include "playerobject.h"
 #include "realtimescene.h"
 #include "projectileobject.h"
-
+#include "utils/helpers.h"
 
 
 PlayerObject::PlayerObject(const RenderShapeData& data,
@@ -85,12 +85,10 @@ void PlayerObject::tick(double elapsedSeconds) {
     auto collisionInfoOpt = getCollisionInfo(translation);
 
     // reset velocity in direction of collision
-    // TODO this method of doing this allow the player to cling to walls by moving into them
-    // TODO fix duplicate collisions upon landing on the ground
     if (collisionInfoOpt.has_value()) {
         glm::vec3 collisionMovementDir = glm::normalize(collisionInfoOpt->collisionCorrectionVec);
-        glm::vec3 projOfVelOnCollisionMovementDir = m_velocity * (glm::dot(glm::normalize(m_velocity), collisionMovementDir));
-        m_velocity += projOfVelOnCollisionMovementDir;
+        glm::vec3 projOfVelOnCollisionMovementDir = helpers::projectAontoB(m_velocity, collisionMovementDir);
+        m_velocity -= projOfVelOnCollisionMovementDir;
         if (collisionMovementDir.y > 0.f) {
             m_onGround = true;
         }
