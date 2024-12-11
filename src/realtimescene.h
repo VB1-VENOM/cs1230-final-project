@@ -14,9 +14,11 @@
 #include "objects/playerobject.h"
 
 #include <unordered_set>
-#define GRACE_PERIOD_MS 8000000
-#define TIME_BETWEEN_SPAWNS_MS 10000000
-#define PROBABILITY_OF_SPAWN 0.6
+#define GRACE_PERIOD_MS 10000
+#define TIME_BETWEEN_SPAWNS_MS 5000
+#define PROBABILITY_OF_SPAWN 0.3
+#define TIME_TO_INCREMENT_SPAWN_S 15
+#define INCREMENT 0.1 //for probability of spawn
 
 
 struct pair_hash {
@@ -183,6 +185,9 @@ private:
 
     //hash map from grid x, z to xyz to spawn enemy at
     std::unordered_map<glm::vec2,glm::vec3, Vec2Hash, Vec2Equal> m_enemy_spawn_locations;
+
+    int current_difficulty_scaling = 0;
+    std::chrono::time_point<std::chrono::steady_clock> m_time_last_scaling;
 };
 
 

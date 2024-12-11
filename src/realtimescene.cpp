@@ -237,14 +237,27 @@ void RealtimeScene::tick(double elapsedSeconds) {
 
     // Update the city dynamically based on the player's position
 
-    // Add elapsed time to the accumulator
 
-    updateDynamicCity(m_camera->pos(), 100.0f);
+    updateDynamicCity(m_camera->pos(), 20.0f);
 
+    //logic for determining when to spawn
     if (std::chrono::steady_clock::now() - m_time_last_spawn > std::chrono::milliseconds(TIME_BETWEEN_SPAWNS_MS))
     {
         m_time_last_spawn = std::chrono::steady_clock::now();
         spawnEnemiesInGrids();
+    }
+    //logic for difficulty scaling over time
+    if (std::chrono::steady_clock::now() > m_enemy_spawn_start  && std::chrono::steady_clock::now() - m_time_last_scaling > std::chrono::seconds(TIME_TO_INCREMENT_SPAWN_S))
+    {
+        current_difficulty_scaling += 1;
+        m_time_last_scaling = std::chrono::steady_clock::now();
+        if (current_difficulty_scaling * INCREMENT + PROBABILITY_OF_SPAWN < 1) {
+            std::cout << "Things are heating up!" << std::endl;
+        }
+        else
+        {
+            std::cout << "Max difficulty reached. Let's see how long you survive..." << std::endl;
+        }
     }
 }
 
@@ -437,6 +450,7 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, con
 }
 
 void RealtimeScene::addEnemy(glm::vec3 position) {
+    std::cout <<" addenemy" <<std::endl;
     ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
     glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
@@ -489,7 +503,7 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
 
     //find location to spawn enemy
     if (std::chrono::steady_clock::now() > m_enemy_spawn_start) {
-        std::cout << "adding " << gridX << ", " << gridZ << std::endl;
+        // std::cout << "adding " << gridX << ", " << gridZ << std::endl;
         m_enemy_spawn_locations[glm::vec2(gridX,gridZ)] = glm::vec3(baseX, 0.0f, baseZ);
     }
 
@@ -575,10 +589,10 @@ void RealtimeScene::spawnEnemiesInGrids()
 {
     //some junk to get a random float between 0 and 1
     std::mt19937 gen(std::random_device{}());
-    std::cout << m_enemy_spawn_locations.size() << std::endl;
+    // std::cout << m_enemy_spawn_locations.size() << std::endl;
 
     for (auto& pair : m_enemy_spawn_locations) {
-        if (std::uniform_real_distribution<float>(0.0, 1.0)(gen) < PROBABILITY_OF_SPAWN)
+        if (std::uniform_real_distribution<float>(0.0, 1.0)(gen) < PROBABILITY_OF_SPAWN + (current_difficulty_scaling * INCREMENT))
         {
             addEnemy(pair.second); //add enemy at 3
         }
@@ -586,8 +600,6 @@ void RealtimeScene::spawnEnemiesInGrids()
 }
 
 void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) {
-    std::cout << "AAAHH" <<std::endl;
-
     float spacing=5.f;
     float baseX = gridX * cols * spacing;
     float baseZ = gridZ * rows * spacing;
@@ -612,7 +624,7 @@ void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) 
 }
 
 void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float updateRadius) {
-    std::cout << m_activeGrids.size() << std::endl;
+    // std::cout << m_activeGrids.size() << std::endl;
     // printActiveGrids(m_activeGrids);
 
     float spacing = 5.f;
@@ -622,6 +634,8 @@ void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float upd
     // Determine which grid the player is in
     int playerGridX = static_cast<int>(playerPosition.x / (cols * spacing));
     int playerGridZ = static_cast<int>(playerPosition.z / (rows * spacing));
+
+    // std::cout << "player is in " << playerGridX  << " ," << playerGridZ << std::endl;
 
     // Activate grids within the updateRadius
     for (int dx = -1; dx <= 1; ++dx) {
@@ -664,7 +678,7 @@ void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float upd
             //remove the grid's coordinates from the vector of spawn locations
             // std::cout << "removing " << gridX << ", " << gridZ << std::endl;
             // m_enemy_spawn_locations.erase(glm::vec2(gridX, gridZ));
-            std::cout << "Deactivated grid: (" << gridX << ", " << gridZ << ", dist: " << dist << ", updateRadius: " << updateRadius << ")\n";
+            // std::cout << "Deactivated grid: (" << gridX << ", " << gridZ << ", dist: " << dist << ", updateRadius: " << updateRadius << ")\n";
         } else {
             ++it;
         }
