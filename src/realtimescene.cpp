@@ -241,7 +241,11 @@ void RealtimeScene::tick(double elapsedSeconds) {
 
     updateDynamicCity(m_camera->pos(), 100.0f);
 
-
+    if (std::chrono::steady_clock::now() - m_time_last_spawn > std::chrono::milliseconds(TIME_BETWEEN_SPAWNS_MS))
+    {
+        m_time_last_spawn = std::chrono::steady_clock::now();
+        spawnEnemiesInGrids();
+    }
 }
 
 void RealtimeScene::paintObjects() {
@@ -484,13 +488,9 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
     float baseZ = gridZ * rows * spacing;
 
     //find location to spawn enemy
-    if (std::chrono::steady_clock::now() > m_enemy_spawn_start)
-    {
-        std::cout << "Current time: " << std::chrono::steady_clock::now().time_since_epoch().count()
-          << ", Spawn time: " << m_enemy_spawn_start.time_since_epoch().count() << std::endl;
-
-        std::cout << "spawn enemy" << std::endl;
-        // addEnemy(glm::vec3(baseX, 0.0f, baseZ));
+    if (std::chrono::steady_clock::now() > m_enemy_spawn_start) {
+        std::cout << "adding " << gridX << ", " << gridZ << std::endl;
+        m_enemy_spawn_locations[glm::vec2(gridX,gridZ)] = glm::vec3(baseX, 0.0f, baseZ);
     }
 
     // Create the floor for the grid
@@ -571,9 +571,23 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
         }
     }
 }
+void RealtimeScene::spawnEnemiesInGrids()
+{
+    //some junk to get a random float between 0 and 1
+    std::mt19937 gen(std::random_device{}());
+    std::cout << m_enemy_spawn_locations.size() << std::endl;
 
+    for (auto& pair : m_enemy_spawn_locations) {
+        if (std::uniform_real_distribution<float>(0.0, 1.0)(gen) < PROBABILITY_OF_SPAWN)
+        {
+            addEnemy(pair.second); //add enemy at 3
+        }
+    }
+}
 
 void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) {
+    std::cout << "AAAHH" <<std::endl;
+
     float spacing=5.f;
     float baseX = gridX * cols * spacing;
     float baseZ = gridZ * rows * spacing;
@@ -598,7 +612,8 @@ void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) 
 }
 
 void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float updateRadius) {
-    printActiveGrids(m_activeGrids);
+    std::cout << m_activeGrids.size() << std::endl;
+    // printActiveGrids(m_activeGrids);
 
     float spacing = 5.f;
     int rows = 3;
@@ -645,7 +660,11 @@ void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float upd
         if (dist > updateRadius * 2) {
             removeGridObjects(gridX, gridZ, rows, cols);
             it = m_activeGrids.erase(it);
-            // std::cout << "Deactivated grid: (" << gridX << ", " << gridZ << ", dist: " << dist << ", updateRadius: " << updateRadius << ")\n";
+
+            //remove the grid's coordinates from the vector of spawn locations
+            // std::cout << "removing " << gridX << ", " << gridZ << std::endl;
+            // m_enemy_spawn_locations.erase(glm::vec2(gridX, gridZ));
+            std::cout << "Deactivated grid: (" << gridX << ", " << gridZ << ", dist: " << dist << ", updateRadius: " << updateRadius << ")\n";
         } else {
             ++it;
         }
@@ -657,6 +676,8 @@ void RealtimeScene::finish() {
         object->finish();
     }
 }
+
+
 
 
 #pragma clang diagnostic pop

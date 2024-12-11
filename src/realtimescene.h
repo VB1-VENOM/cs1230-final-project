@@ -14,7 +14,10 @@
 #include "objects/playerobject.h"
 
 #include <unordered_set>
-#define GRACE_PERIOD_MS 8000
+#define GRACE_PERIOD_MS 8000000
+#define TIME_BETWEEN_SPAWNS_MS 10000000
+#define PROBABILITY_OF_SPAWN 0.6
+
 
 struct pair_hash {
     template <typename T1, typename T2>
@@ -22,6 +25,19 @@ struct pair_hash {
         std::size_t h1 = std::hash<T1>{}(pair.first);
         std::size_t h2 = std::hash<T2>{}(pair.second);
         return h1 ^ (h2 << 1); // Combine hashes using XOR and bit shifting
+    }
+};
+
+//stuff required to make hashmaps work for vec2; we need both a way to check equality and a way to actually hash
+//we do this so we can store spawn locations as a hash from vec2's (grid) to vec3's (xyz)
+struct Vec2Hash {
+    std::size_t operator()(const glm::vec2& v) const {
+        return std::hash<float>()(v.x) ^ (std::hash<float>()(v.y) << 1); //bitwise shift to add randomness
+    }
+};
+struct Vec2Equal {
+    bool operator()(const glm::vec2& lhs, const glm::vec2& rhs) const {
+        return lhs.x == rhs.x && lhs.y == rhs.y;
     }
 };
 
@@ -43,6 +59,7 @@ public:
     /// Paints every object in the scene; to be called in paintGL
     void paintObjects();
     void generateProceduralCity(int gridX, int gridZ, int rows, int cols, float spacing) ;
+    void spawnEnemiesInGrids();
 
     /// Convenience method for constructing and adding a new object to the scene
     /// Returns a shared_ptr to the object.
@@ -162,6 +179,12 @@ private:
     //grace period for when you spawn in
     std::chrono::time_point<std::chrono::steady_clock> m_enemy_spawn_start;
 
+    std::chrono::time_point<std::chrono::steady_clock> m_time_last_spawn;
+
+    //hash map from grid x, z to xyz to spawn enemy at
+    std::unordered_map<glm::vec2,glm::vec3, Vec2Hash, Vec2Equal> m_enemy_spawn_locations;
 };
+
+
 
 #pragma clang diagnostic pop
