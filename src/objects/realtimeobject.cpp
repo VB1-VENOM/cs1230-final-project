@@ -2,20 +2,32 @@
 #include "realtimeobject.h"
 #include "realtimescene.h"
 
+std::map<std::string, std::shared_ptr<Image>> textureCache;
+
 RealtimeObject::RealtimeObject(const RenderShapeData& data, const std::shared_ptr<RealtimeScene>& scene) :
 m_mesh(scene->meshes().at(data.primitive.type)), m_ctm(data.ctm),
 m_inverseOfTranspose3x3CTM(glm::inverse(glm::transpose(glm::mat3(data.ctm)))),
 m_material(data.primitive.material), m_type(data.primitive.type), m_shouldRender(true), m_scene(std::weak_ptr(scene)),
 m_queuedFree(false) {
     if (m_material.textureMap.isUsed) {
-        std::unique_ptr<Image> image = loadImageFromFile(m_material.textureMap.filename);
-        if (image) {
-            m_texture = std::move(image);
-            if (m_material.blend < 0 || m_material.blend > 1) {
-                std::cerr << "Invalid blend value for texture map. Must be between 0 and 1." << std::endl;
-                m_texture = nullptr;
-            }
+        if (m_material.blend < 0 || m_material.blend > 1) {
+            std::cerr << "Invalid blend value for texture map. Must be between 0 and 1." << std::endl;
+            m_texture = nullptr;
+        }
+        // check if the filename exists in the cache
+        auto maybeTexture = textureCache.find(m_material.textureMap.filename);
+        if (maybeTexture != textureCache.end()) {
+            m_texture = maybeTexture->second;
             return;
+        } else {
+            // std::cout << "Texture cache miss! Loading texture" << m_material.textureMap.filename << "from file" << std::endl;
+            std::shared_ptr<Image> image = std::shared_ptr<Image>(loadImageFromFile(m_material.textureMap.filename));
+            if (image) {
+                m_texture = std::move(image);
+                // add to cache
+                textureCache[m_material.textureMap.filename] = m_texture;
+                return;
+            }
         }
     }
     m_texture = nullptr;

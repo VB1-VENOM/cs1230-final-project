@@ -238,7 +238,7 @@ void RealtimeScene::tick(double elapsedSeconds) {
     // Update the city dynamically based on the player's position
 
 
-    updateDynamicCity(m_camera->pos(), 3);
+    updateDynamicCity(m_camera->pos(), 2);
 
     //logic for determining when to spawn
     if (std::chrono::steady_clock::now() - m_time_last_spawn > std::chrono::milliseconds(TIME_BETWEEN_SPAWNS_MS))
@@ -450,7 +450,7 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, con
 }
 
 void RealtimeScene::addEnemy(glm::vec3 position) {
-    std::cout <<" addenemy" <<std::endl;
+    // std::cout <<" addenemy" <<std::endl;
     ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
     glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);

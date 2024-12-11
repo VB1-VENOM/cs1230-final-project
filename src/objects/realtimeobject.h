@@ -78,7 +78,7 @@ private:
     SceneMaterial m_material;
     PrimitiveType m_type;
     /// nullptr if this object does not use a texture
-    std::unique_ptr<Image> m_texture;
+    std::shared_ptr<Image> m_texture;
     GLuint m_glTexID;
     bool m_glTexAllocated = false;
 };
