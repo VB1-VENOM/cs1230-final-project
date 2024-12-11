@@ -560,8 +560,8 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
             material.textureMap.filename = "scenefiles/moretextures/city.jpg";
 
             material.blend = 0.5f;  // Adjust blend factor as needed
-            material.textureMap.repeatU = 1.0f;  // Set U repeat value
-            material.textureMap.repeatV = 1.0f;  // Set V repeat value
+            material.textureMap.repeatU = ((width + depth) / 2.f) / 5.f;  // Set U repeat value
+            material.textureMap.repeatV = (height) / 5.f;  // Set V repeat value
 
             // Add building to the scene
             addObject(PrimitiveType::PRIMITIVE_CUBE, transform, material, RealtimeObjectType::STATIC);
