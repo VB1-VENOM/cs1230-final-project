@@ -490,7 +490,7 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
           << ", Spawn time: " << m_enemy_spawn_start.time_since_epoch().count() << std::endl;
 
         std::cout << "spawn enemy" << std::endl;
-        addEnemy(glm::vec3(baseX, 0.0f, baseZ));
+        // addEnemy(glm::vec3(baseX, 0.0f, baseZ));
     }
 
     // Create the floor for the grid
@@ -597,101 +597,6 @@ void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) 
     }
 }
 
-
-
-
-// void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float updateRadius) {
-//     printActiveGrids(m_activeGrids);
-//     float spacing = 5.f;
-//     int rows = 3;
-//     int cols = 3;
-
-//     // Determine which grid the player is in
-//     int playerGridX = static_cast<int>(playerPosition.x / (cols * spacing));
-//     int playerGridZ = static_cast<int>(playerPosition.z / (rows * spacing));
-
-//     // Calculate the grid's boundaries
-//     float gridStartX = playerGridX * cols * spacing;
-//     float gridEndX = gridStartX + cols * spacing;
-//     float gridStartZ = playerGridZ * rows * spacing;
-//     float gridEndZ = gridStartZ + rows * spacing;
-
-//     // Check if the player is near the edge of the current grid
-//     float edgeThreshold = spacing/2; // Threshold distance to trigger new grid loading
-
-//     bool nearEdgeX = (playerPosition.x - gridStartX < edgeThreshold) || (gridEndX - playerPosition.x < edgeThreshold);
-//     bool nearEdgeZ = (playerPosition.z - gridStartZ < edgeThreshold) || (gridEndZ - playerPosition.z < edgeThreshold);
-//     //std::cout << playerPosition.z - gridStartZ  << ","<<gridEndZ - playerPosition.z<<std::endl;
-//     std::cout<<playerPosition.x<<","<< playerPosition.z<<std::endl;
-//     std::cout << "Player grid:" << std::endl;
-//     std::cout << playerGridX << ","<<playerGridZ<<std::endl;
-// //std::cout << playerPosition.z - gridStartZ << ","<<gridEndZ - playerPosition.z<<std::endl;
-//     if (abs(playerPosition.z - gridStartZ) < edgeThreshold)
-//     {
-//         if (m_activeGrids.find({playerGridX, playerGridZ - 1}) == m_activeGrids.end())
-//         {
-//             std::cout << "z-" << std::endl;
-//             generateProceduralCity(playerGridX, playerGridZ - 1, rows, cols, spacing);
-//             m_activeGrids.insert({playerGridX, playerGridZ - 1});
-//             //std::cout << "z-" << std::endl;
-//         }
-//     }
-//     else if (abs(playerPosition.x - gridStartX) < edgeThreshold)
-//     {
-//         // Check if the grid location already exists
-//         if (m_activeGrids.find({playerGridX - 1, playerGridZ}) == m_activeGrids.end())
-//         {
-//             generateProceduralCity(playerGridX - 1, playerGridZ, rows, cols, spacing);
-
-//             std::cout << "x-" << std::endl;
-//             m_activeGrids.insert({playerGridX - 1, playerGridZ});
-//         }
-//     }
-
-//     else if (abs(gridEndX - playerPosition.x) < edgeThreshold)
-//     {
-//         if (m_activeGrids.find({playerGridX + 1, playerGridZ}) == m_activeGrids.end())
-//         {
-//             generateProceduralCity(playerGridX + 1, playerGridZ, rows, cols, spacing);
-//             m_activeGrids.insert({playerGridX + 1, playerGridZ});
-//             std::cout << "x+" << std::endl;
-//         }
-//     }
-
-//     else if (abs(gridEndZ - playerPosition.z) < edgeThreshold)
-//     {
-//         if (m_activeGrids.find({playerGridX, playerGridZ + 1}) == m_activeGrids.end())
-//         {
-//             std::cout << "z+" << std::endl;
-//             generateProceduralCity(playerGridX, playerGridZ + 1, rows, cols, spacing);
-//             m_activeGrids.insert({playerGridX, playerGridZ + 1});
-
-//         }
-//     }
-
-
-
-//     //Remove grids that are too far from the player
-//     auto it = m_activeGrids.begin();
-//     while (it != m_activeGrids.end()) {
-//         int gridX = it->first;
-//         int gridZ = it->second;
-//         //std::cout<<m_activeGrids.first<<","<<m_activeGrids.second<<std::endl;
-
-//         float gridCenterX = gridX * cols * spacing + cols * spacing / 2.0f;
-//         float gridCenterZ = gridZ * rows * spacing + rows * spacing / 2.0f;
-//         float dist = glm::distance(playerPosition, glm::vec3(gridCenterX, 0, gridCenterZ));
-
-//         if (dist > updateRadius * 2) { // Remove if too far
-//             // Remove all objects in this grid
-//             removeGridObjects(gridX, gridZ, rows, cols);
-//             it = m_activeGrids.erase(it);
-//             std::cout << "Deactivated grid: (" << gridX << ", " << gridZ <<","<<dist<<","<<updateRadius<< ")\n";
-//         } else {
-//             ++it;
-//         }
-//     }
-// }
 void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float updateRadius) {
     printActiveGrids(m_activeGrids);
 
@@ -719,7 +624,7 @@ void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float upd
             if (dist <= updateRadius && m_activeGrids.find({neighborGridX, neighborGridZ}) == m_activeGrids.end()) {
                 generateProceduralCity(neighborGridX, neighborGridZ, rows, cols, spacing);
                 m_activeGrids.insert({neighborGridX, neighborGridZ});
-                std::cout << "Activated grid: (" << neighborGridX << ", " << neighborGridZ << ", dist: " << dist << ")\n";
+                // std::cout << "Activated grid: (" << neighborGridX << ", " << neighborGridZ << ", dist: " << dist << ")\n";
             }
         }
     }
@@ -740,20 +645,12 @@ void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float upd
         if (dist > updateRadius * 2) {
             removeGridObjects(gridX, gridZ, rows, cols);
             it = m_activeGrids.erase(it);
-            std::cout << "Deactivated grid: (" << gridX << ", " << gridZ << ", dist: " << dist << ", updateRadius: " << updateRadius << ")\n";
+            // std::cout << "Deactivated grid: (" << gridX << ", " << gridZ << ", dist: " << dist << ", updateRadius: " << updateRadius << ")\n";
         } else {
             ++it;
         }
     }
 }
-
-
-
-
-
-
-
-
 
 void RealtimeScene::finish() {
     for (const auto& object : m_objects) {
