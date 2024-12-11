@@ -40,7 +40,7 @@ std::optional<CollisionInfo> CollisionObject::getCollisionInfo(const glm::vec3& 
         for (const auto& objectWeak : scene()->collisionObjects()) {
             auto object = objectWeak.lock();
             if (!object) {
-                std::cerr << "Collision object weak pointer expired! This shouldn't happen..." << std::endl;
+                // if the weak_ptr has expired, it's fine; it'll get deleted by the main tick loop later
                 continue;
             }
             if (object.get() == this) {

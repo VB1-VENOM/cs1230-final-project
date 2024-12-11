@@ -237,11 +237,28 @@ void RealtimeScene::tick(double elapsedSeconds) {
 
     // Update the city dynamically based on the player's position
 
-    // Add elapsed time to the accumulator
 
-    updateDynamicCity(m_camera->pos(), 100.0f);
+    updateDynamicCity(m_camera->pos(), 3);
 
-
+    //logic for determining when to spawn
+    if (std::chrono::steady_clock::now() - m_time_last_spawn > std::chrono::milliseconds(TIME_BETWEEN_SPAWNS_MS))
+    {
+        m_time_last_spawn = std::chrono::steady_clock::now();
+        spawnEnemiesInGrids();
+    }
+    //logic for difficulty scaling over time
+    if (std::chrono::steady_clock::now() > m_enemy_spawn_start  && std::chrono::steady_clock::now() - m_time_last_scaling > std::chrono::seconds(TIME_TO_INCREMENT_SPAWN_S))
+    {
+        current_difficulty_scaling += 1;
+        m_time_last_scaling = std::chrono::steady_clock::now();
+        if (current_difficulty_scaling * INCREMENT + PROBABILITY_OF_SPAWN < 1) {
+            std::cout << "Things are heating up!" << std::endl;
+        }
+        else
+        {
+            std::cout << "Max difficulty reached. Let's see how long you survive..." << std::endl;
+        }
+    }
 }
 
 void RealtimeScene::paintObjects() {
@@ -433,6 +450,7 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, con
 }
 
 void RealtimeScene::addEnemy(glm::vec3 position) {
+    std::cout <<" addenemy" <<std::endl;
     ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
     // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
     glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
@@ -475,40 +493,34 @@ const std::vector<std::weak_ptr<CollisionObject>>& RealtimeScene::collisionObjec
 
 void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int cols, float spacing) {
     std::default_random_engine generator;
-    std::uniform_real_distribution<float> heightDist(1.0f, 15.0f); // Random heights
-    std::uniform_real_distribution<float> widthDist(1.0f, 3.0f);  // Random widths
-    std::uniform_real_distribution<float> depthDist(1.0f, 3.0f);  // Random depths
+    std::uniform_real_distribution<float> heightDist(1.0f, 15.0f);
+    std::uniform_real_distribution<float> widthDist(1.0f, 3.0f);
+    std::uniform_real_distribution<float> depthDist(1.0f, 3.0f);
 
-    // Calculate base position for the grid
     float baseX = gridX * cols * spacing;
     float baseZ = gridZ * rows * spacing;
 
-    //find location to spawn enemy
-    if (std::chrono::steady_clock::now() > m_enemy_spawn_start)
-    {
-        std::cout << "Current time: " << std::chrono::steady_clock::now().time_since_epoch().count()
-          << ", Spawn time: " << m_enemy_spawn_start.time_since_epoch().count() << std::endl;
-
-        std::cout << "spawn enemy" << std::endl;
-        // addEnemy(glm::vec3(baseX, 0.0f, baseZ));
+    // find location to spawn enemy
+    if (std::chrono::steady_clock::now() > m_enemy_spawn_start) {
+        // std::cout << "adding " << gridX << ", " << gridZ << std::endl;
+        m_enemy_spawn_locations[glm::vec2(gridX,gridZ)] = glm::vec3(baseX, 0.0f, baseZ);
     }
 
-    // Create the floor for the grid
-    float floorWidth = cols * spacing; // Width spans the entire grid
-    float floorDepth = rows * spacing; // Depth spans the entire grid
-    float floorHeight = 0.1f;          // Thin floor
+    float floorWidth = cols * spacing;
+    float floorDepth = rows * spacing;
+    float floorHeight = 0.1f;
 
     glm::vec3 floorPosition(
-        baseX + floorWidth / 2.0f - spacing / 2.0f,  // Center the floor in the X-axis
-        -floorHeight / 2.0f - 3,                    // Position floor at ground level
-        baseZ + floorDepth / 2.0f - spacing / 2.0f  // Center the floor in the Z-axis
+        baseX + floorWidth / 2.0f - spacing / 2.0f,
+        -floorHeight / 2.0f - 3.f,
+        baseZ + floorDepth / 2.0f - spacing / 2.0f
         );
 
     glm::mat4 floorTransform = glm::translate(glm::mat4(1.0f), floorPosition) *
                                glm::scale(glm::mat4(1.0f), glm::vec3(floorWidth, floorHeight, floorDepth));
 
-    SceneMaterial floorMaterial; // Material for the floor
-    floorMaterial.cDiffuse = SceneColor(0.2f, 0.2f, 0.2f, 1.0f); // Dark gray color
+    SceneMaterial floorMaterial;
+    floorMaterial.cDiffuse = SceneColor(0.2f, 0.2f, 0.2f, 1.0f);
     floorMaterial.cAmbient = SceneColor(0.1f, 0.1f, 0.1f, 1.0f);
     floorMaterial.cSpecular = SceneColor(0.2f, 0.2f, 0.2f, 1.0f);
     floorMaterial.shininess = 5.0f;
@@ -516,23 +528,19 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
     floorMaterial.textureMap.isUsed = true;
     floorMaterial.textureMap.filename = "scenefiles/moretextures/doomfloor.jpg";
 
-    floorMaterial.blend = 0.5f;  // Adjust blend factor as needed
-    floorMaterial.textureMap.repeatU = 1.0f;  // Set U repeat value
-    floorMaterial.textureMap.repeatV = 1.0f;  // Set V repeat value
+    floorMaterial.blend = 0.5f;
+    floorMaterial.textureMap.repeatU = 1.0f;
+    floorMaterial.textureMap.repeatV = 1.0f;
 
-
-    // Add the floor to the scene
+    // add floor
     addObject(PrimitiveType::PRIMITIVE_CUBE, floorTransform, floorMaterial, RealtimeObjectType::STATIC);
 
-    // Create buildings in the grid
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            // Calculate global grid coordinates
             int globalX = gridX * rows + i;
             int globalZ = gridZ * cols + j;
             std::pair<int, int> gridCoord = {globalX, globalZ};
 
-            // Check if the building already exists
             if (existingBuildings.find(gridCoord) != existingBuildings.end()) {
                 continue;
             }
@@ -543,7 +551,7 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
 
             glm::vec3 position(
                 baseX + i * spacing,
-                height / 2.0f - 3, // Place the building at half its height to align it with the ground
+                height / 2.0f - 3,
                 baseZ + j * spacing
                 );
             //std::cout << "Building position: (" << position.x << ", " << position.y << ", " << position.z << ")\n";
@@ -551,27 +559,42 @@ void RealtimeScene::generateProceduralCity(int gridX, int gridZ, int rows, int c
             glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) *
                                   glm::scale(glm::mat4(1.0f), glm::vec3(width, height, depth));
 
-            SceneMaterial material; // Default material for buildings
-            material.cDiffuse = SceneColor(0.3f, 0.3f, 0.3f, 1.0f); // Gray color
+            SceneMaterial material;
+            material.cDiffuse = SceneColor(0.3f, 0.3f, 0.3f, 1.0f);
             material.cAmbient = SceneColor(0.1f, 0.1f, 0.1f, 1.0f);
             material.cSpecular = SceneColor(0.5f, 0.5f, 0.5f, 1.0f);
             material.shininess = 10.0f;
             material.textureMap.isUsed = true;
             material.textureMap.filename = "scenefiles/moretextures/city.jpg";
 
-            material.blend = 0.5f;  // Adjust blend factor as needed
-            material.textureMap.repeatU = ((width + depth) / 2.f) / 5.f;  // Set U repeat value
-            material.textureMap.repeatV = (height) / 5.f;  // Set V repeat value
+            material.blend = 0.5f;
+            material.textureMap.repeatU = ((width + depth) / 2.f) / 5.f;
+            material.textureMap.repeatV = (height) / 5.f;
 
-            // Add building to the scene
+            // add building
+            // std::cout << "Adding building at " << position.x << ", " << position.y << ", " << position.z << std::endl;
+            // std::cout << "Total existing buildings: " << existingBuildings.size() << std::endl;
+            // std::cout << "Total active grids: " << m_activeGrids.size() << std::endl;
+            // std::cout << "Total objects: " << m_objects.size() << std::endl;
             addObject(PrimitiveType::PRIMITIVE_CUBE, transform, material, RealtimeObjectType::STATIC);
 
-            // Mark the grid coordinate as having a building
             existingBuildings.insert(gridCoord);
         }
     }
 }
+void RealtimeScene::spawnEnemiesInGrids()
+{
+    //some junk to get a random float between 0 and 1
+    std::mt19937 gen(std::random_device{}());
+    // std::cout << m_enemy_spawn_locations.size() << std::endl;
 
+    for (auto& pair : m_enemy_spawn_locations) {
+        if (std::uniform_real_distribution<float>(0.0, 1.0)(gen) < PROBABILITY_OF_SPAWN + (current_difficulty_scaling * INCREMENT))
+        {
+            addEnemy(pair.second); //add enemy at 3
+        }
+    }
+}
 
 void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) {
     float spacing=5.f;
@@ -579,7 +602,7 @@ void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) 
     float baseZ = gridZ * rows * spacing;
 
     for (auto it = m_objects.begin(); it != m_objects.end();) {
-        glm::vec3 objPos = (*it)->pos(); // Ensure `pos()` gives object position
+        glm::vec3 objPos = (*it)->pos();
         if (objPos.x >= baseX && objPos.x < baseX + cols * spacing &&
             objPos.z >= baseZ && objPos.z < baseZ + rows * spacing) {
             (*it)->queueFree();
@@ -589,7 +612,6 @@ void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) 
         }
     }
 
-    // Remove grid coordinates from existingBuildings
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             existingBuildings.erase({gridX * rows + i, gridZ * cols + j});
@@ -597,31 +619,34 @@ void RealtimeScene::removeGridObjects(int gridX, int gridZ, int rows, int cols) 
     }
 }
 
-void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float updateRadius) {
-    printActiveGrids(m_activeGrids);
+void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, int gridCellUpdateDist) {
+    // std::cout << m_activeGrids.size() << std::endl;
+    // printActiveGrids(m_activeGrids);
 
     float spacing = 5.f;
     int rows = 3;
     int cols = 3;
 
-    // Determine which grid the player is in
+    // determine which grid the player is in
     int playerGridX = static_cast<int>(playerPosition.x / (cols * spacing));
     int playerGridZ = static_cast<int>(playerPosition.z / (rows * spacing));
 
-    // Activate grids within the updateRadius
-    for (int dx = -1; dx <= 1; ++dx) {
-        for (int dz = -1; dz <= 1; ++dz) {
+    // std::cout << "player is in " << playerGridX  << " ," << playerGridZ << std::endl;
+
+    int startDelta = -gridCellUpdateDist;
+    int endDelta = gridCellUpdateDist;
+
+    for (int dx = startDelta; dx <= endDelta; dx++) {
+        for (int dz = startDelta; dz <= endDelta; dz++) {
             int neighborGridX = playerGridX + dx;
             int neighborGridZ = playerGridZ + dz;
 
-            // Calculate the center of the neighbor grid
-            float gridCenterX = neighborGridX * cols * spacing + cols * spacing / 2.0f;
-            float gridCenterZ = neighborGridZ * rows * spacing + rows * spacing / 2.0f;
+            // float gridCenterX = neighborGridX * cols * spacing + cols * spacing / 2.0f;
+            // float gridCenterZ = neighborGridZ * rows * spacing + rows * spacing / 2.0f;
 
-            float dist = glm::distance(playerPosition, glm::vec3(gridCenterX, 0, gridCenterZ));
+            // float dist = glm::distance(playerPosition, glm::vec3(gridCenterX, 0, gridCenterZ));
 
-            // Activate the grid if within updateRadius and not already active
-            if (dist <= updateRadius && m_activeGrids.find({neighborGridX, neighborGridZ}) == m_activeGrids.end()) {
+            if (m_activeGrids.find({neighborGridX, neighborGridZ}) == m_activeGrids.end()) {
                 generateProceduralCity(neighborGridX, neighborGridZ, rows, cols, spacing);
                 m_activeGrids.insert({neighborGridX, neighborGridZ});
                 // std::cout << "Activated grid: (" << neighborGridX << ", " << neighborGridZ << ", dist: " << dist << ")\n";
@@ -629,22 +654,22 @@ void RealtimeScene::updateDynamicCity(const glm::vec3& playerPosition, float upd
         }
     }
 
-    // Remove grids that are too far from the player
+    // remove grids that are too far from the player
     auto it = m_activeGrids.begin();
     while (it != m_activeGrids.end()) {
         int gridX = it->first;
         int gridZ = it->second;
 
-        // Calculate the center of the current grid
-        float gridCenterX = gridX * cols * spacing + cols * spacing / 2.0f;
-        float gridCenterZ = gridZ * rows * spacing + rows * spacing / 2.0f;
+        int manhanttanGridDistFromPlayer = std::abs(playerGridX - gridX) + std::abs(playerGridZ - gridZ);
 
-        float dist = glm::distance(playerPosition, glm::vec3(gridCenterX, 0, gridCenterZ));
-
-        // Deactivate the grid if it is too far
-        if (dist > updateRadius * 2) {
+        // deactivate the grid if it is too far
+        if (manhanttanGridDistFromPlayer > gridCellUpdateDist * 2) {
             removeGridObjects(gridX, gridZ, rows, cols);
             it = m_activeGrids.erase(it);
+
+            //remove the grid's coordinates from the vector of spawn locations
+            // std::cout << "removing " << gridX << ", " << gridZ << std::endl;
+            // m_enemy_spawn_locations.erase(glm::vec2(gridX, gridZ));
             // std::cout << "Deactivated grid: (" << gridX << ", " << gridZ << ", dist: " << dist << ", updateRadius: " << updateRadius << ")\n";
         } else {
             ++it;
@@ -657,6 +682,8 @@ void RealtimeScene::finish() {
         object->finish();
     }
 }
+
+
 
 
 #pragma clang diagnostic pop

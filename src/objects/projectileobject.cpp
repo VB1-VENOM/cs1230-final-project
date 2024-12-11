@@ -72,7 +72,7 @@ void ProjectileObject::collisionSphereEffect()
     int numProjectiles = 500; // Number of projectiles to spawn
     float speed = 5.0f;     // Speed of the additional projectiles
     float maxDistance = 1.0f; // Max distance for the spawned projectiles
-    std::cout << "ENtering sphere effect" << std::endl;
+    // std::cout << "ENtering sphere effect" << std::endl;
     for (int i = 0; i < numProjectiles; ++i) {
         // Generate a random direction for the new projectile
         glm::vec3 randomDirection = glm::normalize(glm::vec3(
