@@ -14,11 +14,11 @@
 #include "objects/playerobject.h"
 
 #include <unordered_set>
-#define GRACE_PERIOD_MS 10000
+#define GRACE_PERIOD_MS 3000
 #define TIME_BETWEEN_SPAWNS_MS 5000
-#define PROBABILITY_OF_SPAWN 0.3
+#define PROBABILITY_OF_SPAWN 0.25
 #define TIME_TO_INCREMENT_SPAWN_S 15
-#define INCREMENT 0.1 //for probability of spawn
+#define INCREMENT 0.05 //for probability of spawn
 
 
 struct pair_hash {

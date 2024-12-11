@@ -52,7 +52,7 @@ std::optional<CollisionInfo> CollisionObject::getCollisionInfo(const glm::vec3& 
             const auto& otherAABB = object->aabb();
             if (movedAABB.collides(otherAABB)) {
                 if (collidedObjects.contains(object)) {
-                    std::cout << "INFO: object collided with same object twice in one call to getCollisionInfo" << std::endl;
+                    // std::cout << "INFO: object collided with same object twice in one call to getCollisionInfo" << std::endl;
                     continue;
                 }
                 auto collisionCorrectionVec = movedAABB.getCollisionMoveVec(otherAABB);

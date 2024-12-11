@@ -35,6 +35,13 @@ void EnemyObject::tick(double elapsedSeconds) {
     glm::vec3 direction_to_player = glm::normalize(glm::vec3(m_camera->pos().x, 0.f, m_camera->pos().z)
                                                    - glm::vec3(pos().x, 0.f, pos().z));
 
+    //if enemy is more than 50 away despawn
+    if (glm::length(glm::vec3(m_camera->pos().x, 0.f, m_camera->pos().z)
+                                                   - glm::vec3(pos().x, 0.f, pos().z)) > 50)
+    {
+        queueFree();
+    }
+
     glm::vec3 enemy2DVelocity = direction_to_player * ENEMY_SPEED;
     m_velocity.x = enemy2DVelocity.x;
     m_velocity.z = enemy2DVelocity.z;
@@ -85,7 +92,7 @@ void EnemyObject::tick(double elapsedSeconds) {
 
     //reset the way that the damaged enemies look
     if (std::chrono::steady_clock::now() > damage_end_time && health > 0) {
-        setMaterial(enemy_materials::enemyMaterial);
+        setMaterial(enemy_materials::enemyMaterial1);
     }
 
     translate(translation);
@@ -100,7 +107,7 @@ void EnemyObject::onShot() {
         return;
     }
     damage_end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(ON_ENEMY_HIT_FLASH_MS);
-    setMaterial(enemy_materials::damagedEnemyMaterial);
+    setMaterial(enemy_materials::damagedEnemyMaterial1);
 }
 
 #pragma clang diagnostic pop

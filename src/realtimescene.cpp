@@ -174,25 +174,6 @@ std::shared_ptr<RealtimeScene> RealtimeScene::init(int width, int height, const 
     return newScene;
 }
 
-std::vector<std::shared_ptr<EnemyObject>> RealtimeScene::createEnemies(std::vector<glm::vec3> enemy_positions,
-    std::shared_ptr<RealtimeScene> scene)
-{
-    std::vector<std::shared_ptr<EnemyObject>> enemies;
-    for(glm::vec3 position : enemy_positions)
-    {
-        ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
-        // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
-        glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
-        RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
-
-        enemies.push_back(std::make_shared<EnemyObject>(enemyShapeData, scene, m_camera, m_taken_damage));
-
-    }
-    return enemies;
-}
-
-
-
 RealtimeScene::RealtimeScene(int width, int height, float nearPlane, float farPlane, SceneGlobalData globalData, SceneCameraData cameraData,
                              std::map<PrimitiveType, std::shared_ptr<PrimitiveMesh>> meshes) :
     m_width(width), m_height(height), m_globalData(globalData),
@@ -450,10 +431,13 @@ std::shared_ptr<RealtimeObject> RealtimeScene::addObject(PrimitiveType type, con
 }
 
 void RealtimeScene::addEnemy(glm::vec3 position) {
-    // std::cout <<" addenemy" <<std::endl;
-    ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::enemyMaterial};
-    // start player scaled up by 1 (i.e. 1 unit wide); start player centered at camera
-    glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(1.f,1.f,1.f)), position);
+    std::mt19937 gen(std::random_device{}());
+    float scale1 = std::uniform_real_distribution<float>(0.9, 1.1)(gen);
+    float scale2 = std::uniform_real_distribution<float>(0.9, 1.1)(gen);
+    float scale3 = std::uniform_real_distribution<float>(0.9, 1.1)(gen);
+
+    ScenePrimitive enemyPrimitive{PrimitiveType::PRIMITIVE_CYLINDER, enemy_materials::getRandomEnemyMaterial()};
+    glm::mat4 enemyCTM = glm::translate(glm::scale(glm::mat4(1.0f), glm::vec3(scale1,scale2,scale3)), position);
     RenderShapeData enemyShapeData = RenderShapeData{enemyPrimitive, enemyCTM};
 
     auto enemy = new EnemyObject(enemyShapeData, shared_from_this(), m_camera, m_taken_damage);

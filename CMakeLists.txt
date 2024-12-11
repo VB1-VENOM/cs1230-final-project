@@ -89,8 +89,6 @@ add_executable(${PROJECT_NAME}
         src/meshes/skymesh.h
         src/objects/skyboxobject.h
         src/objects/skyboxobject.cpp
-
-
 )
 
 # GLM: this creates its library and allows you to `#include "glm/..."`

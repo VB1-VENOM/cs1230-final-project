@@ -7,8 +7,13 @@
 #include <utils/scenedata.h>
 
 namespace enemy_materials {
-    extern SceneMaterial enemyMaterial;
-    extern SceneMaterial damagedEnemyMaterial;
+    extern SceneMaterial enemyMaterial1;
+    extern SceneMaterial damagedEnemyMaterial1;
+    extern SceneMaterial enemyMaterial2;
+    extern SceneMaterial damagedEnemyMaterial2;
+    extern SceneMaterial enemyMaterial3;
+    extern SceneMaterial damagedEnemyMaterial3;
+    extern SceneMaterial getRandomEnemyMaterial();
 }
 
 #endif //ENEMY_MATERIALS_H
