@@ -115,7 +115,7 @@ public:
     void mouseMoveEvent(double xpos, double ypos);
 
     std::shared_ptr <RealtimeObject> addBuilding(const glm::vec3& position);
-    void updateDynamicCity(const glm::vec3& playerPosition, float updateRadius);
+    void updateDynamicCity(const glm::vec3& playerPosition, int gridCellUpdateDist);
     //std::shared_ptr<RealtimeScene> generateProceduralCity(int cityWidth, int cityDepth, int blockSize);
     // TODO there might be a smarter way to store these... maybe a map from id to object?
     //      I feel like we also need some sort of callback system to register objects that want to listen for input, etc

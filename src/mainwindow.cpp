@@ -38,7 +38,7 @@ void MainWindow::initialize(int width, int height) {
     // settings.sceneFilePath = "scenefiles/action/required/spot_light/spot_light_1.json";
     // settings.sceneFilePath = "scenefiles/illuminate/required/texture_tests/texture_sphere2.json";
     // settings.sceneFilePath = "scenefiles/final/reflections_basic_modified.json";
-    settings.sceneFilePath = "scenefiles/final/shadow_test_modified.json";
+    settings.sceneFilePath = "scenefiles/final/procedural_city.json";
 
     auto [w, h] = getViewportSize();
     m_realtime = std::make_unique<Realtime>(w, h);
