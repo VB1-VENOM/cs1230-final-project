@@ -1,4 +1,4 @@
-## CS1230 Final Project - Lights, Camera, Explosion
+## FPS OpenGL Game built with Procedural maps
 
 ### Overview
 
